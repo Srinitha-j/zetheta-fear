@@ -1,0 +1,1617 @@
+ZeTheta Algorithms Private Limited 
+CIN No. U62012MH2023PTC410415 
+Registered Office Address: F2307 Oberoi Splendor JVLR  
+Mumbai – 400060, Maharashtra, India. 
+Email: hr@zetheta.com 
+Phone: +91-9136249369  
+ 
+Strictly Private and Confidential – Not for Circulation 
+Project: Fear & Greed Meter Game 
+ 
+Task: Build a cryptocurrency fear and greed index platform. Implement sentiment aggregation 
+from multiple sources, volatility analysis, and social media tracking. Create market cycle 
+indicators, contrarian signal generation, and sentiment visualization dashboards. 
+ 
+CONFIDENTIALITY & INTELLECTUAL PROPERTY NOTICE 
+STRICT CONFIDENTIALITY REQUIREMENTS 
+ 
+This project and all related work is STRICTLY PRIVATE & CONFIDENTIAL 
+ 
+Mandatory Requirements: 
+• ALL GitHub repositories MUST be set to PRIVATE 
+• NO public sharing of code, concepts, or implementations 
+• NO posting on social media, portfolios, or public platforms 
+• ALL work remains property of Zetheta Algorithms Private Limited 
+• NDA compliance required throughout project lifecycle 
+ 
+GitHub Repository Requirements: 
+• Create as PRIVATE repository from Day 1 
+• Add ONLY authorized collaborators 
+• Enable branch protection rules 
+• Disable forking 
+• No public wikis or discussions 
+• Transfer ownership to @ZethetaIntern on Day 15 
+ 
+Intellectual Property Transfer: 
+• All code, documentation, and assets become property of Zetheta Algorithms 
+• Student retains no rights to commercialize or distribute 
+• Portfolio references allowed ONLY with written permission 
+• Case study usage requires explicit approval 
+ 
+Violations Will Result In: 
+• Immediate project termination 
+• Loss of certification 
+• Potential legal action 
+• Removal from program 
+
+ZeTheta Algorithms Private Limited 
+CIN No. U62012MH2023PTC410415 
+Registered Office Address: F2307 Oberoi Splendor JVLR  
+Mumbai – 400060, Maharashtra, India. 
+Email: hr@zetheta.com 
+Phone: +91-9136249369  
+ 
+Strictly Private and Confidential – Not for Circulation 
+ 
+By starting this project, you agree to: 
+1. Maintain complete confidentiality 
+2. Create only private repositories 
+3. Transfer all IP rights to Zetheta Algorithms 
+4. Not discuss project details publicly 
+5. Sign NDA if requested 
+ 
+RAPID DEVELOPMENT NOTICE 
+ 
+This project MUST be completed in 15 days using AI/LLM tools and low-code platforms 
+ 
+• Timeline: 15 days from start to deployment 
+• Approach: 80% AI-generated code, 20% customization 
+• Tools: Claude.ai, ChatGPT, Cursor, v0.dev, Bubble.io, GameMaker 
+• Success Metric: Working MVP deployed, not perfect code 
+ 
+DAY 1: MANDATORY SETUP PROCEDURES 
+ 
+CRITICAL FIRST STEPS (Must Complete Before Any Coding) 
+ 
+1. GitHub Private Repository Setup: 
+    
+   Step 1: Create PRIVATE Repository 
+   • Go to https://github.com/new  
+   • Select Private (NOT Public) 
+   • Name: zetheta-fear-greed-game-[yourname] 
+   • Add README: Yes 
+   • Add  .gitignore: Node 
+   • License: NONE (Proprietary) 
+    
+   Step 2: Configure Security 
+   • Settings → Manage access → Add @ZethetaIntern as collaborator 
+   • Settings → Branches → Add rule → Require pull request reviews 
+   • Settings → Security → Enable security alerts 
+    
+   Step 3: Add Confidentiality Notice 
+
+ZeTheta Algorithms Private Limited 
+CIN No. U62012MH2023PTC410415 
+Registered Office Address: F2307 Oberoi Splendor JVLR  
+Mumbai – 400060, Maharashtra, India. 
+Email: hr@zetheta.com 
+Phone: +91-9136249369  
+ 
+Strictly Private and Confidential – Not for Circulation 
+   Create README.md with: 
+   CONFIDENTIAL - Property of Zetheta Algorithms Private Limited 
+   This repository contains proprietary code and trade secrets. 
+   Unauthorized access, use, or distribution is strictly prohibited. 
+ 
+2. Project Tracking Setup: 
+   • Create private Notion/Trello board 
+   • Share ONLY with authorized mentors 
+   • Daily progress updates required 
+ 
+3. Communication Channels: 
+   • Use only official Slack/Teams channels 
+   • No discussion in public forums 
+   • No Stack Overflow questions with actual code 
+ 
+PART 1: COMPREHENSIVE TRAINING MATERIAL & SKILL DEVELOPMENT 
+(Complete in Days 1-3) 
+ 
+1.1 CORE CONCEPTS TO MASTER 
+ 
+Market Sentiment Analysis 
+ 
+Sentiment Indicators: 
+• Fear vs Greed psychology 
+• Investor behavior patterns 
+• Market cycle recognition 
+• Volatility and emotion correlation 
+• Technical analysis indicators 
+• Social sentiment metrics 
+• Alternative data sources 
+ 
+Gamification Mechanics: 
+• Engagement through game loops 
+• Progress systems and rewards 
+• Challenge design 
+• Educational game mechanics 
+• Feedback systems 
+
+ZeTheta Algorithms Private Limited 
+CIN No. U62012MH2023PTC410415 
+Registered Office Address: F2307 Oberoi Splendor JVLR  
+Mumbai – 400060, Maharashtra, India. 
+Email: hr@zetheta.com 
+Phone: +91-9136249369  
+ 
+Strictly Private and Confidential – Not for Circulation 
+• Player motivation drivers 
+• Long-term retention strategies 
+ 
+Behavioral Finance Concepts: 
+• Fear and greed as market drivers 
+• FOMO (Fear of Missing Out) 
+• Loss aversion patterns 
+• Anchoring bias 
+• Herding behavior 
+• Overconfidence effects 
+• Decision-making psychology 
+ 
+Sentiment Data Sources: 
+• Social media analysis 
+• News sentiment extraction 
+• Technical indicators 
+• Exchange data 
+• On-chain metrics 
+• Market volatility indices 
+• Alternative datasets 
+ 
+1.2 ESSENTIAL LEARNING RESOURCES 
+ 
+YouTube Video Courses (Free) 
+ 
+Market Psychology: 
+• Behavioral Finance Fundamentals: https://www.youtube.com/watch?v=D3QOu8Stib8  
+• Trading Psychology Masterclass: https://www.youtube.com/watch?v=XQXC1x5XWBE  
+• Fear and Greed in Markets: https://www.youtube.com/watch?v=xbQGHxo6JhM  
+ 
+Game Design: 
+• Game Design Fundamentals: https://www.youtube.com/watch?v=zH_g3aH0wEA  
+• Engagement Mechanics: https://www.youtube.com/watch?v=bOdI2QxM8pY  
+• UX for Games: https://www.youtube.com/watch?v=LiGv2P2Dw4s   
+ 
+Sentiment Analysis: 
+• NLP Sentiment Analysis: https://www.youtube.com/watch?v=xDIavvh7JVo  
+
+ZeTheta Algorithms Private Limited 
+CIN No. U62012MH2023PTC410415 
+Registered Office Address: F2307 Oberoi Splendor JVLR  
+Mumbai – 400060, Maharashtra, India. 
+Email: hr@zetheta.com 
+Phone: +91-9136249369  
+ 
+Strictly Private and Confidential – Not for Circulation 
+• Text Mining Techniques: https://www.youtube.com/watch?v=8TmOpvCWBGU  
+• Social Media Analytics: https://www.youtube.com/watch?v=jbW8p5OGfL0  
+ 
+Online Courses & Platforms (Free Tier) 
+ 
+Coursera: 
+• Behavioral Economics (Duke University) 
+• Game Design Theory (various) 
+• Text Mining & NLP (various) 
+ 
+edX: 
+• Behavioral Finance (various institutions) 
+• Game Development (MIT available content) 
+• Data Science for Finance 
+ 
+Specialized Platforms: 
+• Rapidapi Sentiment APIs: https://rapidapi.com/category/Sentiment%20Analysis  
+• NewsAPI Documentation: https://newsapi.org/docs  
+• CoinMarketCap API: https://coinmarketcap.com/api/documentation/  
+ 
+Technical Documentation & Guides 
+ 
+Game Development: 
+• Phaser.js Documentation: https://phaser.io/documentation  
+• Babylon.js Guide: https://doc.babylonjs.com/  
+• Three.js Tutorial: https://threejs.org/docs/  
+ 
+NLP & Sentiment: 
+• NLTK Documentation: https://www.nltk.org/  
+• TextBlob Guide: https://textblob.readthedocs.io/  
+• spaCy NLP: https://spacy.io/  
+ 
+Data APIs: 
+• Alpha Vantage API: https://www.alphavantage.co/documentation/  
+• Polygon.io API: https://polygon.io/docs  
+• Finnhub API: https://finnhub.io/docs/api/  
+ 
+
+ZeTheta Algorithms Private Limited 
+CIN No. U62012MH2023PTC410415 
+Registered Office Address: F2307 Oberoi Splendor JVLR  
+Mumbai – 400060, Maharashtra, India. 
+Email: hr@zetheta.com 
+Phone: +91-9136249369  
+ 
+Strictly Private and Confidential – Not for Circulation 
+1.3 HANDS-ON PRACTICE LABS 
+ 
+Lab 1: Sentiment Scoring Engine 
+ 
+Objective: Build system to calculate market sentiment score 
+ 
+Skills Required: 
+• NLP and text processing 
+• API data integration 
+• Statistical aggregation 
+• Real-time data handling 
+ 
+Practice Resources: 
+• News API for data 
+• Social media datasets 
+• Historical sentiment datasets 
+• Labeling tools 
+ 
+Lab 2: Game Mechanics Implementation 
+ 
+Objective: Create interactive sentiment-based game 
+ 
+Skills Required: 
+• Game development basics 
+• UI/UX design 
+• Player feedback systems 
+• Performance optimization 
+ 
+Practice Resources: 
+• Phaser framework 
+• Babylon.js 
+• Game design patterns 
+• Asset creation tools 
+ 
+Lab 3: Real-Time Dashboard 
+ 
+Objective: Build live sentiment visualization 
+
+ZeTheta Algorithms Private Limited 
+CIN No. U62012MH2023PTC410415 
+Registered Office Address: F2307 Oberoi Splendor JVLR  
+Mumbai – 400060, Maharashtra, India. 
+Email: hr@zetheta.com 
+Phone: +91-9136249369  
+ 
+Strictly Private and Confidential – Not for Circulation 
+ 
+Skills Required: 
+• Real-time data streaming 
+• Interactive visualizations 
+• Data aggregation 
+• WebSocket programming 
+ 
+Practice Resources: 
+• Chart.js 
+• D3.js 
+• Recharts 
+• Socket.io 
+ 
+1.4 REFERENCE BOOKS & PAPERS (Free Access) 
+ 
+Academic Papers: 
+ 
+1. Market Sentiment and Cryptocurrency Prices 
+   Available at: https://arxiv.org/abs/2108.03300  
+ 
+2. Predicting Bitcoin Prices with Natural Language Processing 
+   Available at: https://arxiv.org/abs/2108.04748  
+ 
+3. The Psychology of Risk - Kahneman & Tversky research 
+   Available at: https://www.apa.org/pubs/journals/abn  
+ 
+4. Game Theory and Behavioral Economics 
+   Available at: https://www.nobelprize.org/prizes/economic-sciences/  
+ 
+Market Psychology: 
+• Technical Analysis Psychology 
+• Trading Psychology Principles 
+• Crowd Behavior in Markets 
+• Risk and Emotion 
+ 
+Game Design Resources: 
+• Game Mechanics Design Patterns 
+
+ZeTheta Algorithms Private Limited 
+CIN No. U62012MH2023PTC410415 
+Registered Office Address: F2307 Oberoi Splendor JVLR  
+Mumbai – 400060, Maharashtra, India. 
+Email: hr@zetheta.com 
+Phone: +91-9136249369  
+ 
+Strictly Private and Confidential – Not for Circulation 
+• Engagement Loop Theory 
+• Player Motivation Framework 
+• Gamification Best Practices 
+ 
+1.5 COMMUNITY & SUPPORT RESOURCES 
+ 
+APPROVED Communities Only: 
+ 
+Internal Slack/Teams: 
+• game-development (PRIVATE) 
+• sentiment-analysis (PRIVATE) 
+• game-design (PRIVATE) 
+ 
+DO NOT USE Public Communities: 
+• No public Discord servers 
+• No Reddit posts 
+• No Twitter discussions 
+• No GitHub Discussions 
+ 
+For Help: 
+1. First: Check internal documentation 
+2. Second: Ask in private Slack 
+3. Third: Contact assigned mentor 
+4. Never: Post publicly 
+ 
+PART 2: METHODOLOGY & DEVELOPMENT FRAMEWORK 
+(Complete in Days 2-4) 
+ 
+2.1 PROJECT ARCHITECTURE OVERVIEW 
+ 
+System Architecture: 
+ 
+Data Ingestion Layer: 
+• Market data collection 
+• Sentiment data aggregation 
+• Social sentiment analysis 
+• Technical indicator calculation 
+
+ZeTheta Algorithms Private Limited 
+CIN No. U62012MH2023PTC410415 
+Registered Office Address: F2307 Oberoi Splendor JVLR  
+Mumbai – 400060, Maharashtra, India. 
+Email: hr@zetheta.com 
+Phone: +91-9136249369  
+ 
+Strictly Private and Confidential – Not for Circulation 
+ 
+Game Engine: 
+• Sentiment-based game mechanics 
+• Player interaction handling 
+• Score calculation 
+• Challenge generation 
+ 
+Analytics & Visualization: 
+• Real-time sentiment display 
+• Historical analysis 
+• Player performance tracking 
+• Market correlation analysis 
+ 
+Multiplayer Component: 
+• Player rankings 
+• Competitive challenges 
+• Leaderboards 
+• Social features 
+ 
+2.2 TECH STACK REQUIREMENTS 
+ 
+Backend Technology: 
+ 
+Runtime & Language: 
+• Node.js (v18+ LTS) 
+• Python for NLP/sentiment 
+• TypeScript for type safety 
+• Go (optional for performance) 
+ 
+Frameworks: 
+• Express.js or NestJS 
+• FastAPI for Python services 
+• Socket.io for real-time 
+• Bull for job queues 
+ 
+NLP & Sentiment: 
+• NLTK for text processing 
+
+ZeTheta Algorithms Private Limited 
+CIN No. U62012MH2023PTC410415 
+Registered Office Address: F2307 Oberoi Splendor JVLR  
+Mumbai – 400060, Maharashtra, India. 
+Email: hr@zetheta.com 
+Phone: +91-9136249369  
+ 
+Strictly Private and Confidential – Not for Circulation 
+• spaCy for advanced NLP 
+• TextBlob for simple sentiment 
+• Transformers (HuggingFace) 
+ 
+Data Processing: 
+• Pandas for data manipulation 
+• NumPy for computation 
+• Redis for caching 
+• Kafka for streaming 
+ 
+Frontend Technology: 
+ 
+Game Framework: 
+• Phaser.js for 2D games 
+• Babylon.js for 3D 
+• Three.js as alternative 
+• Canvas API for graphics 
+ 
+UI Framework: 
+• React.js for dashboard 
+• Next.js for full-stack 
+• TypeScript for types 
+• Tailwind CSS for styling 
+ 
+Libraries: 
+• Recharts for visualizations 
+• Socket.io-client for real-time 
+• Redux for state management 
+• Lottie for animations 
+ 
+2.3 DATABASE & DATA PERSISTENCE 
+ 
+PostgreSQL: 
+ 
+Schema Design: 
+Tables: 
+- users (id, username, score, level, created_at) 
+
+ZeTheta Algorithms Private Limited 
+CIN No. U62012MH2023PTC410415 
+Registered Office Address: F2307 Oberoi Splendor JVLR  
+Mumbai – 400060, Maharashtra, India. 
+Email: hr@zetheta.com 
+Phone: +91-9136249369  
+ 
+Strictly Private and Confidential – Not for Circulation 
+- game_sessions (id, user_id, sentiment_score, outcome) 
+- sentiment_history (timestamp, market_sentiment, source) 
+- leaderboards (user_id, rank, score, last_updated) 
+- challenges (id, description, difficulty, sentiment_range) 
+- player_progress (user_id, challenge_id, completion_date) 
+ 
+Redis Cache: 
+ 
+Caching Strategy: 
+• Current sentiment scores (TTL: 1 minute) 
+• Player session data (TTL: 24 hours) 
+• Leaderboard cache (TTL: 10 minutes) 
+• Sentiment history (short-term cache) 
+ 
+2.4 SMART CONTRACT ARCHITECTURE 
+ 
+ 
+If building blockchain-based rewards: 
+ 
+GameToken.sol: 
+• Token minting for winners 
+• Player reward mechanism 
+• Leaderboard rewards 
+• Staking integration 
+ 
+GameRegistry.sol: 
+• Player registration 
+• Achievement tracking 
+• Reward distribution 
+• Access control 
+ 
+2.5 API ENDPOINTS SPECIFICATION 
+ 
+Game API: 
+ 
+GET /api/sentiment/current 
+- Get current market sentiment 
+
+ZeTheta Algorithms Private Limited 
+CIN No. U62012MH2023PTC410415 
+Registered Office Address: F2307 Oberoi Splendor JVLR  
+Mumbai – 400060, Maharashtra, India. 
+Email: hr@zetheta.com 
+Phone: +91-9136249369  
+ 
+Strictly Private and Confidential – Not for Circulation 
+- Returns: sentiment_score, components, confidence 
+ 
+POST /api/game/challenge 
+- Get new sentiment challenge 
+- Body: difficulty level 
+- Returns: challenge parameters 
+ 
+POST /api/game/submit 
+- Submit player guess 
+- Body: player_answer, timestamp 
+- Returns: score, explanation, market_data 
+ 
+GET /api/leaderboard 
+- Get global rankings 
+- Query: timeframe, category 
+- Returns: top players 
+ 
+POST /api/achievements 
+- Get player achievements 
+- Returns: badges, milestones 
+ 
+WebSocket: 
+ 
+wss://api.example.com/ws/game/:userId 
+- Real-time game updates 
+- Emits: sentiment changes, challenges 
+- Emits: multiplayer events 
+ 
+2.6 CODE IMPLEMENTATION GUIDE 
+ 
+Project Structure: 
+ 
+ 
+project-root/ 
+├── backend/ 
+│   ├── src/ 
+│   │   ├── services/ 
+
+ZeTheta Algorithms Private Limited 
+CIN No. U62012MH2023PTC410415 
+Registered Office Address: F2307 Oberoi Splendor JVLR  
+Mumbai – 400060, Maharashtra, India. 
+Email: hr@zetheta.com 
+Phone: +91-9136249369  
+ 
+Strictly Private and Confidential – Not for Circulation 
+│   │   │   ├── sentimentService.ts 
+│   │   │   ├── gameService.ts 
+│   │   │   └── leaderboardService.ts 
+│   │   ├── models/ 
+│   │   │   ├── sentimentScorer.ts 
+│   │   │   └── gameLogic.ts 
+│   │   ├── routes/ 
+│   │   └── app.ts 
+│   ├── python/ 
+│   │   ├── sentiment/ 
+│   │   │   ├── nlp_processor.py 
+│   │   │   └── sentiment_scorer.py 
+│   │   └── analysis/ 
+│   └── package.json 
+├── game/ 
+│   ├── src/ 
+│   │   ├── scenes/ 
+│   │   ├── objects/ 
+│   │   ├── ui/ 
+│   │   └── main.ts 
+│   ├── assets/ 
+│   └── package.json 
+├── frontend/ 
+│   ├── src/ 
+│   │   ├── components/ 
+│   │   │   ├── GameContainer.tsx 
+│   │   │   ├── Dashboard.tsx 
+│   │   │   └── Leaderboard.tsx 
+│   │   ├── pages/ 
+│   │   └── store/ 
+│   └── package.json 
+├── docs/ 
+│   ├── GAME_MECHANICS.md 
+│   ├── SENTIMENT_ANALYSIS.md 
+│   └── API_SPEC.md 
+└── README.md 
+ 
+
+ZeTheta Algorithms Private Limited 
+CIN No. U62012MH2023PTC410415 
+Registered Office Address: F2307 Oberoi Splendor JVLR  
+Mumbai – 400060, Maharashtra, India. 
+Email: hr@zetheta.com 
+Phone: +91-9136249369  
+ 
+Strictly Private and Confidential – Not for Circulation 
+ 
+Development Timeline: 
+ 
+Days 1-2: Setup 
+1. Repository & environment setup 
+2. Database initialization 
+3. API scaffolding 
+4. Game engine setup 
+ 
+Days 3-4: Core Features 
+1. Sentiment analysis implementation 
+2. Basic game mechanics 
+3. Score calculation 
+4. Data persistence 
+ 
+Days 5-7: Game Development 
+1. Phaser game scenes 
+2. UI implementation 
+3. Player interactions 
+4. Challenge mechanics 
+ 
+Days 8-10: Multiplayer & Social 
+1. Leaderboard system 
+2. Competitive modes 
+3. Achievement tracking 
+4. Social features 
+ 
+Days 11-14: Integration & Testing 
+1. End-to-end testing 
+2. Performance optimization 
+3. Bug fixes 
+4. Security review 
+ 
+Day 15: Deployment & Handover 
+1. Production deployment 
+2. Monitoring setup 
+3. Final testing 
+
+ZeTheta Algorithms Private Limited 
+CIN No. U62012MH2023PTC410415 
+Registered Office Address: F2307 Oberoi Splendor JVLR  
+Mumbai – 400060, Maharashtra, India. 
+Email: hr@zetheta.com 
+Phone: +91-9136249369  
+ 
+Strictly Private and Confidential – Not for Circulation 
+4. GitHub transfer 
+ 
+2.7 AI/LLM INTEGRATION GUIDE 
+ 
+Claude.ai for Game Design 
+ 
+Safe Use Cases: 
+ 
+Game Design: 
+1. Challenge design patterns 
+2. Player progression systems 
+3. Reward mechanisms 
+4. Educational scenarios 
+ 
+Code Generation: 
+1. Game loop implementation 
+2. Score calculation logic 
+3. Leaderboard algorithms 
+4. NLP pipelines 
+ 
+Example Prompts: 
+Design sentiment-based game challenges for crypto market 
+Create a scoring system combining sentiment and accuracy 
+Implement a progression system for financial education 
+Design multiplayer competitive challenges 
+ 
+Cursor Implementation: 
+ 
+Workflow: 
+1. Generate game scene code 
+2. Implement sentiment integration 
+3. Create challenge generators 
+4. Auto-refactor for performance 
+ 
+2.8 TESTING STRATEGY 
+ 
+Unit Tests: 80% coverage 
+
+ZeTheta Algorithms Private Limited 
+CIN No. U62012MH2023PTC410415 
+Registered Office Address: F2307 Oberoi Splendor JVLR  
+Mumbai – 400060, Maharashtra, India. 
+Email: hr@zetheta.com 
+Phone: +91-9136249369  
+ 
+Strictly Private and Confidential – Not for Circulation 
+ 
+Game Logic: 
+• Score calculation accuracy 
+• Challenge generation 
+• Leaderboard updates 
+• Achievement unlocking 
+ 
+Sentiment Analysis: 
+• Score consistency 
+• API resilience 
+• Data validation 
+• Error handling 
+ 
+Integration Tests: 
+• API endpoint functionality 
+• Database operations 
+• WebSocket connections 
+• Real-time updates 
+ 
+E2E Tests: 
+• Complete game flow 
+• Challenge completion 
+• Leaderboard updates 
+• Multiplayer scenarios 
+ 
+Tools: 
+• Jest for unit tests 
+• Cypress for E2E 
+• Selenium for browser 
+• K6 for load testing 
+ 
+2.9 SECURITY IMPLEMENTATION 
+ 
+Data Security: 
+• User data encryption 
+• Secure API communication 
+• Rate limiting 
+
+ZeTheta Algorithms Private Limited 
+CIN No. U62012MH2023PTC410415 
+Registered Office Address: F2307 Oberoi Splendor JVLR  
+Mumbai – 400060, Maharashtra, India. 
+Email: hr@zetheta.com 
+Phone: +91-9136249369  
+ 
+Strictly Private and Confidential – Not for Circulation 
+• Access control 
+ 
+Game Integrity: 
+• Score validation 
+• Cheat detection 
+• Play history audit 
+• Anti-bot measures 
+ 
+API Security: 
+• Authentication & authorization 
+• Input validation 
+• CORS configuration 
+• Rate limiting 
+ 
+2.10 PERFORMANCE OPTIMIZATION 
+ 
+Game Performance: 
+• Frame rate optimization 
+• Memory management 
+• Asset loading 
+• Rendering optimization 
+ 
+Backend Optimization: 
+• Query optimization 
+• Caching strategies 
+• Connection pooling 
+• CDN integration 
+ 
+DAY 15: FINAL HANDOVER PROCEDURES 
+ 
+MANDATORY COMPLETION CHECKLIST 
+ 
+GitHub Ownership Transfer: 
+□ All code committed and pushed 
+□ Game assets included or referenced 
+□ Documentation complete 
+□ .env.example updated 
+
+ZeTheta Algorithms Private Limited 
+CIN No. U62012MH2023PTC410415 
+Registered Office Address: F2307 Oberoi Splendor JVLR  
+Mumbai – 400060, Maharashtra, India. 
+Email: hr@zetheta.com 
+Phone: +91-9136249369  
+ 
+Strictly Private and Confidential – Not for Circulation 
+□ Transfer to @ZethetaIntern 
+ 
+Deliverables: 
+□ Demo video (PRIVATE, 5-10 minutes) 
+□ Game design documentation 
+□ Sentiment analysis methods 
+□ API documentation 
+□ Game guide 
+□ Test results report 
+ 
+Quality Assurance: 
+□ All tests passing (>80% coverage) 
+□ No TypeScript errors 
+□ No console errors 
+□ Security review complete 
+ 
+SUCCESS METRICS & DELIVERABLES 
+ 
+Minimum Viable Product (Day 15) 
+ 
+Must Have: 
+✓ Playable game mechanics 
+✓ Sentiment scoring system functional 
+✓ Real-time sentiment data 
+✓ Leaderboard system active 
+✓ Challenge system working 
+✓ Player authentication 
+✓ Database operational 
+✓ API endpoints responding 
+✓ Real-time updates via WebSocket 
+✓ Documentation complete 
+✓ Demo video provided 
+✓ GitHub transferred 
+ 
+Game Metrics: 
+
+ZeTheta Algorithms Private Limited 
+CIN No. U62012MH2023PTC410415 
+Registered Office Address: F2307 Oberoi Splendor JVLR  
+Mumbai – 400060, Maharashtra, India. 
+Email: hr@zetheta.com 
+Phone: +91-9136249369  
+ 
+Strictly Private and Confidential – Not for Circulation 
+✓ >15 FPS game performance 
+✓ <200ms API responses 
+✓ Real-time updates <1s latency 
+✓ 95%+ uptime 
+✓ 5+ challenge types 
+ 
+LEGAL & COMPLIANCE 
+ 
+Intellectual Property Rights: 
+• All code property of Zetheta Algorithms 
+• No personal use 
+• No derivative works 
+• No open-source contributions 
+ 
+Confidentiality: 
+• No game design disclosure 
+• No algorithm sharing 
+• No public discussion 
+• NDA extends post-project 
+ 
+Data Protection: 
+• Player data encryption 
+• GDPR compliance 
+• No unauthorized export 
+• Audit logs maintained 
+ 
+FINAL DECLARATION 
+ 
+By proceeding with this project, we acknowledge and agree that: 
+ 
+1. All work becomes property of Zetheta Algorithms Private Limited 
+2. We will maintain strict confidentiality 
+3. We will create only PRIVATE repositories 
+4. We will transfer GitHub ownership on Day 15 
+5. We will not retain copies 
+6. We will not discuss publicly 
+7. We understand legal consequences 
+
+ZeTheta Algorithms Private Limited 
+CIN No. U62012MH2023PTC410415 
+Registered Office Address: F2307 Oberoi Splendor JVLR  
+Mumbai – 400060, Maharashtra, India. 
+Email: hr@zetheta.com 
+Phone: +91-9136249369  
+ 
+Strictly Private and Confidential – Not for Circulation 
+ 
+This enterprise training guide is designed for students to build production -ready gamified 
+sentiment analysis platforms in 15 days while maintaining strict confidentiality. All work 
+remains property of Zetheta Algorithms Private Limited. 
+ 
+REMEMBER: PRIVATE. CONFIDENTIAL. PROPRIETARY. 
+ 
+ 
+ 
+ 
+ 
+  
+
+ZeTheta Algorithms Private Limited 
+CIN No. U62012MH2023PTC410415 
+Registered Office Address: F2307 Oberoi Splendor JVLR  
+Mumbai – 400060, Maharashtra, India. 
+Email: hr@zetheta.com 
+Phone: +91-9136249369  
+ 
+Strictly Private and Confidential – Not for Circulation 
+PROJECT: FEAR & GREED METER GAME 
+ 
+Duration: 15 Days | Level: Advanced | Property: Zetheta Algorithms Private Limited 
+Focus Areas: Market sentiment, gamification, behavioral finance, NLP analysis 
+ 
+    STRICTLY CONFIDENTIAL - NO PUBLIC DISTRIBUTION     
+ 
+DOCUMENT STRUCTURE 
+ 
+PART 1: FOUNDATION & CONFIDENTIALITY 
+  • Confidentiality requirements and IP protection 
+  • Mandatory setup procedures 
+  • GitHub private repository configuration 
+  • Development environment setup 
+  • Database and infrastructure configuration 
+  • Project tracking and communication channels 
+ 
+PART 2: COMPREHENSIVE LEARNING MATERIALS  
+  • Core concepts and fundamental theory 
+  • YouTube video courses (free resources) 
+  • Online courses (Coursera, edX) 
+  • Technical documentation and guides 
+  • Hands-on practice labs with code examples 
+  • Reference papers and academic resources 
+  • Community support (PRIVATE channels only) 
+ 
+PART 3: IMPLEMENTATION METHODOLOGY  
+  • System architecture overview 
+  • Technology stack details 
+  • API endpoint specifications 
+  • Database schema design 
+  • Code implementation guide 
+  • AI/LLM integration strategies 
+  • Testing strategy and quality assurance 
+  • Security implementation 
+  • Performance optimization 
+ 
+
+ZeTheta Algorithms Private Limited 
+CIN No. U62012MH2023PTC410415 
+Registered Office Address: F2307 Oberoi Splendor JVLR  
+Mumbai – 400060, Maharashtra, India. 
+Email: hr@zetheta.com 
+Phone: +91-9136249369  
+ 
+Strictly Private and Confidential – Not for Circulation 
+PART 4: DEPLOYMENT & HANDOVER  
+  • Production deployment procedures 
+  • Monitoring and logging setup 
+  • Final deliverables checklist 
+  • GitHub transfer procedures 
+  • Success metrics and evaluation 
+  • Legal compliance and IP transfer 
+  • Post-deployment support 
+ 
+PART 1: FOUNDATION & CONFIDENTIALITY 
+ 
+1.1 CONFIDENTIALITY & INTELLECTUAL PROPERTY NOTICE 
+ 
+    CRITICAL LEGAL REQUIREMENTS     
+This project and ALL related materials are STRICTLY PRIVATE & CONFIDENTIAL. 
+Unauthorized access, use, or distribution is PROHIBITED and subject to legal action. 
+ 
+MANDATORY REQUIREMENTS: 
+✓ ALL GitHub repositories MUST be set to PRIVATE from Day 1 
+✓ NO public sharing of code, concepts, methodologies, or implementations 
+✓ NO posting on social media, portfolios, blogs, or public platforms 
+✓ NO discussion in public forums (Reddit, Discord, Stack Overflow, Twitter) 
+✓ ALL work product becomes exclusive property of Zetheta Algorithms immediately 
+✓ NDA compliance required throughout project and indefinitely thereafter 
+✓ NO screenshots, demos, or references without explicit written authorization 
+ 
+GITHUB REPOSITORY SECURITY REQUIREMENTS: 
+□ Create repository as PRIVATE (verify twice before any commits!) 
+□ Repository name: zetheta-project-yourname-date 
+□ Add ONLY authorized collaborators: @ZethetaIntern 
+□ Enable branch protection on main branch (require PR reviews) 
+□ Enable security alerts and dependency scanning 
+□ Disable forking completely 
+□ Disable public wikis, discussions, and issues 
+□ Add comprehensive .gitignore (never commit secrets) 
+□ Use commit signing for authentication 
+
+ZeTheta Algorithms Private Limited 
+CIN No. U62012MH2023PTC410415 
+Registered Office Address: F2307 Oberoi Splendor JVLR  
+Mumbai – 400060, Maharashtra, India. 
+Email: hr@zetheta.com 
+Phone: +91-9136249369  
+ 
+Strictly Private and Confidential – Not for Circulation 
+□ Transfer full ownership to @ZethetaIntern on Day 15 
+ 
+INTELLECTUAL PROPERTY TRANSFER AGREEMENT: 
+• All code, documentation, algorithms, and creative works become Zetheta property 
+• Student/Developer retains ZERO rights to commercialize, distribute, or reuse 
+• Portfolio references allowed ONLY with written permission from Zetheta legal 
+• Case study usage requires explicit approval and content review 
+• All patents, copyrights, and trade secrets vest in Zetheta upon creation 
+• Source code cannot be replicated for personal or other commercial projects 
+• Violation of these terms results in immediate legal action 
+ 
+VIOLATION CONSEQUENCES: 
+• Immediate project termination without compensation 
+• Loss of certification and permanent program dismissal 
+• Legal action including injunctions, damages, and recovery of costs 
+• Permanent ban from all Zetheta programs and partnerships 
+• Reporting to industry blacklist databases 
+• Criminal prosecution where applicable under IP and trade secret laws 
+ 
+BY PROCEEDING WITH THIS PROJECT, YOU IRREVOCABLY AGREE TO: 
+1. Maintain complete confidentiality indefinitely (no time limit) 
+2. Create only private repositories with proper access controls 
+3. Transfer all intellectual property rights to Zetheta immediately 
+4. Not discuss project details publicly in any forum or medium 
+5. Sign comprehensive NDA if requested at any time 
+6. Accept monitoring of repository access, commits, and communications 
+7. Destroy all local copies upon project completion and verification 
+8. Report any security breaches or accidental disclosures immediately 
+9. Accept full liability for any unauthorized disclosures 
+10. Submit to Zetheta's dispute resolution procedures 
+ 
+CONFIDENTIALITY CHECKLIST - DAILY VERIFICATION: 
+□ Repository still set to PRIVATE 
+□ No code committed to public repositories 
+□ No discussion in public channels 
+□ No screenshots or demos shared publicly 
+□ Local files secured and encrypted 
+
+ZeTheta Algorithms Private Limited 
+CIN No. U62012MH2023PTC410415 
+Registered Office Address: F2307 Oberoi Splendor JVLR  
+Mumbai – 400060, Maharashtra, India. 
+Email: hr@zetheta.com 
+Phone: +91-9136249369  
+ 
+Strictly Private and Confidential – Not for Circulation 
+□ No API keys or secrets in code 
+□ .env files not committed to git 
+□ Team communications only through approved private channels 
+ 
+1.2 RAPID DEVELOPMENT PARADIGM - 15 DAY SPRINT 
+ 
+  AI-ACCELERATED DEVELOPMENT METHODOLOGY   
+ 
+PHILOSOPHY: 
+This project MUST be completed in exactly 15 calendar days using AI/LLM tools 
+and modern rapid development platforms. Focus is on working MVP with core  
+functionality, not perfect production code. 
+ 
+CORE PRINCIPLES: 
+• Timeline: 15 days from project kickoff to production deployment 
+• Approach: 80% AI-generated code, 20% human customization/integration 
+• Quality: Working MVP demonstrating all core features 
+• Testing: Automated testing with AI-generated test cases 
+• Documentation: AI-assisted with human review and refinement 
+• Success: Functional system deployed, documented, and transferred 
+ 
+APPROVED AI/LLM DEVELOPMENT TOOLS: 
+ 
+Primary Code Generation: 
+✓ Claude.ai (Anthropic) - Architecture design, algorithm development 
+✓ ChatGPT-4 (OpenAI) - Code implementation, debugging assistance 
+✓ GitHub Copilot - Real-time code completion and suggestions 
+✓ Cursor AI - Integrated development environment with AI pair programming 
+✓ Tabnine - Intelligent code completion and pattern recognition 
+ 
+UI/Frontend Generation: 
+✓ v0.dev (Vercel) - Rapid UI component generation from descriptions 
+✓ Replit AI - Quick prototyping and testing 
+✓ Figma AI - Design assistance (if needed) 
+ 
+Low-Code/No-Code Platforms (where applicable): 
+
+ZeTheta Algorithms Private Limited 
+CIN No. U62012MH2023PTC410415 
+Registered Office Address: F2307 Oberoi Splendor JVLR  
+Mumbai – 400060, Maharashtra, India. 
+Email: hr@zetheta.com 
+Phone: +91-9136249369  
+ 
+Strictly Private and Confidential – Not for Circulation 
+✓ Bubble.io - Rapid frontend prototyping without extensive coding 
+✓ Retool - Internal dashboards and admin panels 
+✓ Supabase - Rapid backend setup with authentication 
+✓ Firebase - Real-time database and authentication services 
+ 
+AI USAGE BEST PRACTICES: 
+1. Start each feature with detailed prompt to AI describing requirements 
+2. Review and customize AI-generated code before committing 
+3. Use AI for boilerplate, repetitive code, test generation 
+4. Human review for critical security and business logic 
+5. Iterate quickly with AI assistance for debugging 
+6. Document AI-generated code with human-written comments 
+7. Never expose confidential algorithms/business logic to public AI tools 
+ 
+DAILY DEVELOPMENT TARGETS: 
+ 
+Day 1: Environment Setup & Foundation (8-10 hours) 
+- GitHub private repo created and configured 
+- Development environment fully setup 
+- Database schema designed and created 
+- Core project structure established 
+- Initial blockchain connections tested 
+- Documentation framework created 
+ 
+Day 2-3: Core Learning & Design (16-20 hours) 
+- Complete comprehensive training materials 
+- Study all provided resources and documentation 
+- Design system architecture 
+- Create detailed technical specifications 
+- Design database schema and relationships 
+- Plan API endpoints and data flows 
+- Complete hands-on practice labs 
+ 
+Day 4-5: Core Detection/Analysis Engine (16-20 hours) 
+- Implement main detection/analysis algorithms 
+- Build data processing pipelines 
+- Create scoring/classification models 
+
+ZeTheta Algorithms Private Limited 
+CIN No. U62012MH2023PTC410415 
+Registered Office Address: F2307 Oberoi Splendor JVLR  
+Mumbai – 400060, Maharashtra, India. 
+Email: hr@zetheta.com 
+Phone: +91-9136249369  
+ 
+Strictly Private and Confidential – Not for Circulation 
+- Implement real-time monitoring logic 
+- Write unit tests for core functionality 
+- Initial integration testing 
+ 
+Day 6-7: Monitoring & Data Layer (16-20 hours) 
+- Build blockchain monitoring services 
+- Implement data collection and storage 
+- Create caching layer (Redis) 
+- Build WebSocket real-time updates 
+- Implement API endpoints 
+- Database integration and optimization 
+ 
+Day 8-9: Frontend Dashboard (16-20 hours) 
+- Design and implement main dashboard 
+- Create data visualization components 
+- Build real-time update interface 
+- Implement user authentication 
+- Create alert management UI 
+- Responsive design implementation 
+ 
+Day 10-11: Alert System & Integration (16-20 hours) 
+- Build multi-channel alert system 
+- Implement notification logic 
+- Create escalation rules 
+- Test end-to-end workflows 
+- Integration testing across all components 
+- Performance testing and optimization 
+ 
+Day 12-13: Testing & Refinement (16-20 hours) 
+- Comprehensive testing (unit, integration, e2e) 
+- Bug fixing and issue resolution 
+- Performance optimization 
+- Security hardening 
+- Code cleanup and refactoring 
+- Documentation completion 
+ 
+Day 14: Deployment & Finalization (8-10 hours) 
+
+ZeTheta Algorithms Private Limited 
+CIN No. U62012MH2023PTC410415 
+Registered Office Address: F2307 Oberoi Splendor JVLR  
+Mumbai – 400060, Maharashtra, India. 
+Email: hr@zetheta.com 
+Phone: +91-9136249369  
+ 
+Strictly Private and Confidential – Not for Circulation 
+- Deploy to production environment 
+- Configure monitoring and logging 
+- Set up automated backups 
+- Final security audit 
+- Create deployment documentation 
+- Record demo video 
+ 
+Day 15: Handover & Transfer (4-6 hours) 
+- Final testing and verification 
+- Complete all documentation 
+- Transfer GitHub repository ownership 
+- Submit all deliverables 
+- Project sign-off and closure 
+- Delete local copies 
+ 
+SUCCESS METRICS (Must achieve by Day 15): 
+ 
+Technical Deliverables: 
+✓ Fully functional core detection/analysis engine deployed 
+✓ Real-time monitoring of 50+ targets (pools/tokens/contracts) 
+✓ Alert system operational with multiple notification channels 
+✓ Dashboard displaying key metrics and visualizations 
+✓ API endpoints documented and functional (>20 endpoints) 
+✓ Database operational with proper schema and indexes 
+✓ Authentication and authorization working 
+✓ WebSocket real-time updates functional 
+✓ 7+ days of historical data collected and analyzed 
+✓ Test coverage >70% for critical components 
+ 
+Documentation Deliverables: 
+✓ System architecture documentation complete 
+✓ API reference documentation complete 
+✓ Database schema documentation complete 
+✓ Deployment guide with step-by-step instructions 
+✓ Configuration guide for all environment variables 
+
+ZeTheta Algorithms Private Limited 
+CIN No. U62012MH2023PTC410415 
+Registered Office Address: F2307 Oberoi Splendor JVLR  
+Mumbai – 400060, Maharashtra, India. 
+Email: hr@zetheta.com 
+Phone: +91-9136249369  
+ 
+Strictly Private and Confidential – Not for Circulation 
+✓ User guide for dashboard operation 
+✓ Security documentation and audit results 
+✓ Performance benchmark results documented 
+ 
+Project Deliverables: 
+✓ GitHub repository transferred to @ZethetaIntern 
+✓ Demo video recorded (5-10 minutes, PRIVATE YouTube/Vimeo) 
+✓ All source code committed and pushed 
+✓ No API keys or secrets in code 
+✓ .env.example file with all required variables 
+✓ README with comprehensive setup instructions 
+✓ All tests passing 
+✓ No critical bugs or security vulnerabilities 
+ 
+ACCEPTABLE TECHNICAL DEBT FOR MVP: 
+• Configuration values hardcoded in code (document for future refactor) 
+• Basic UI without extensive animations or visual polish 
+• Limited error handling for rare edge cases (cover main paths thoroughly) 
+• Test coverage at 70%+ (not required 100%) 
+• Simple deployment script (not full CI/CD pipeline) 
+• Some AI-generated code without line-by-line manual review 
+• Code repetition where refactoring would delay delivery 
+• Basic logging without extensive log analysis tools 
+ 
+NOT ACCEPTABLE COMPROMISES (MUST BE IMPLEMENTED): 
+✗ Security vulnerabilities in authentication or authorization 
+✗ Exposed API keys, secrets, or credentials anywhere 
+✗ Missing authentication on sensitive API endpoints 
+✗ No database backups or disaster recovery capability 
+✗ Missing access logs for security audit trail 
+✗ Unencrypted transmission of sensitive data (must use HTTPS/WSS) 
+✗ Public repository or exposed proprietary code 
+✗ Non-functional core features (main detection/analysis must work) 
+✗ Significant data loss scenarios without recovery 
+
+ZeTheta Algorithms Private Limited 
+CIN No. U62012MH2023PTC410415 
+Registered Office Address: F2307 Oberoi Splendor JVLR  
+Mumbai – 400060, Maharashtra, India. 
+Email: hr@zetheta.com 
+Phone: +91-9136249369  
+ 
+Strictly Private and Confidential – Not for Circulation 
+✗ Memory leaks or critical performance issues 
+ 
+1.3 MANDATORY DAY 1 SETUP PROCEDURES 
+ 
+ 
+  CRITICAL FIRST-DAY ACTIVITIES - NO CODING UNTIL COMPLETE   
+ 
+These setup steps are MANDATORY and must be completed on Day 1 before any 
+feature development begins. Skipping or rushing through setup will cause 
+significant delays and issues later in the project. 
+ 
+HOUR 1-2: GITHUB REPOSITORY SETUP & SECURITY CONFIGURATION 
+ 
+Step 1: Create Private Repository 
+□ Navigate to https://github.com/new  
+□ Repository name format: zetheta-project-[yourname]-[YYYYMMDD] 
+  Example: zetheta-project-johnsmith-20250115 
+□ Description: CONFIDENTIAL - Fear & Greed Meter Game 
+□ Visibility:     PRIVATE (verify twice - this is critical!) 
+□ Initialize with README: Yes 
+□ Add .gitignore: Node (or appropriate for your stack) 
+□ License: NONE (this is proprietary software) 
+□ Click Create repository button 
+□ Verify repository shows Private badge prominently 
+ 
+Step 2: Configure Repository Security Settings 
+ 
+Navigate to Settings → General: 
+□ Features section: 
+  - Wikis:   Disabled (no public wikis) 
+  - Issues:   Disabled (use private project tracker) 
+  - Sponsorships:   Disabled 
+  - Projects:   Disabled 
+  - Preserve this repository:   Disabled 
+  - Discussions:   Disabled 
+ 
+
+ZeTheta Algorithms Private Limited 
+CIN No. U62012MH2023PTC410415 
+Registered Office Address: F2307 Oberoi Splendor JVLR  
+Mumbai – 400060, Maharashtra, India. 
+Email: hr@zetheta.com 
+Phone: +91-9136249369  
+ 
+Strictly Private and Confidential – Not for Circulation 
+□ Pull Requests section: 
+  - Allow merge commits: ✓ Enabled 
+  - Allow squash merging: ✓ Enabled 
+  - Allow rebase merging: ✓ Enabled 
+  - Automatically delete head branches: ✓ Enabled 
+ 
+□ Archives section: 
+  - Include Git LFS objects:   Disabled 
+ 
+Navigate to Settings → Manage Access: 
+□ Click Invite a collaborator 
+□ Add: @ZethetaIntern with Admin role 
+□ Add: [Your assigned mentor username] with Write role 
+□ DO NOT add anyone else without explicit authorization 
+ 
+Navigate to Settings → Branches: 
+□ Click Add branch protection rule 
+□ Branch name pattern: main 
+□ Protect matching branches: 
+  - ✓ Require a pull request before merging 
+  - ✓ Require approvals: 1 
+  - ✓ Dismiss stale pull request approvals when new commits are pushed 
+  - ✓ Require review from Code Owners 
+  - ✓ Require status checks to pass before merging 
+  - ✓ Require branches to be up to date before merging 
+  - ✓ Require conversation resolution before merging 
+  -   Do not allow bypassing the above settings 
+□ Click Create or Save changes 
+ 
+Navigate to Settings → Code security and analysis: 
+□ Security section: 
+  - Dependency graph: ✓ Enable 
+  - Dependabot alerts: ✓ Enable 
+  - Dependabot security updates: ✓ Enable 
+  - Grouped security updates: ✓ Enable 
+
+ZeTheta Algorithms Private Limited 
+CIN No. U62012MH2023PTC410415 
+Registered Office Address: F2307 Oberoi Splendor JVLR  
+Mumbai – 400060, Maharashtra, India. 
+Email: hr@zetheta.com 
+Phone: +91-9136249369  
+ 
+Strictly Private and Confidential – Not for Circulation 
+ 
+□ Code scanning section: 
+  - Code scanning: ✓ Enable (setup GitHub Advanced Security if available) 
+   
+□ Secret scanning: 
+  - Secret scanning: ✓ Enable 
+  - Push protection: ✓ Enable 
+ 
+Step 3: Create Comprehensive README.md 
+ 
+Create README.md with confidentiality notice: 
+ 
+markdown 
+        CONFIDENTIAL - PROPRIETARY SOFTWARE        
+ 
+ Project: Fear & Greed Meter Game 
+Property of Zetheta Algorithms Private Limited 
+ 
+     CONFIDENTIALITY NOTICE     
+ 
+This repository contains proprietary code, algorithms, trade secrets, and  
+confidential information. 
+ 
+UNAUTHORIZED ACCESS, USE, DISTRIBUTION, OR DISCLOSURE IS STRICTLY 
+PROHIBITED 
+ 
+All content is protected by: 
+- Copyright © 2025 Zetheta Algorithms Private Limited 
+- Trade secret protection under applicable law 
+- Non-disclosure agreements (NDAs) 
+- Intellectual property law (patents, copyrights, trademarks) 
+ 
+ Legal Restrictions 
+-   NO copying, forking, or distribution without written authorization 
+-   NO public discussion, disclosure, or demonstration 
+-   NO use outside of authorized project scope 
+
+ZeTheta Algorithms Private Limited 
+CIN No. U62012MH2023PTC410415 
+Registered Office Address: F2307 Oberoi Splendor JVLR  
+Mumbai – 400060, Maharashtra, India. 
+Email: hr@zetheta.com 
+Phone: +91-9136249369  
+ 
+Strictly Private and Confidential – Not for Circulation 
+- ✓ Access limited to authorized personnel only under NDA 
+-          Violations subject to immediate legal prosecution 
+ 
+ Authorization 
+Access granted ONLY to: 
+- Project developers (under signed NDA) 
+- Zetheta technical reviewers (authorized personnel) 
+- Authorized security auditors (with written engagement) 
+ 
+ Security Contacts 
+For access requests or security concerns: 
+- Email: security@zetheta.com 
+- Legal: legal@zetheta.com 
+- Emergency: security-emergency@zetheta.com 
+ 
+ Project Information 
+- Start Date: [Date] 
+- Target Completion: [Date + 15 days] 
+- Developer: [Your Name] 
+- Mentor: [Mentor Name] 
+- Status: In Development 
+ 
+By accessing this repository, you acknowledge that you have read and understood these 
+confidentiality requirements and agree to be bound by them. 
+ 
+Step 4: Create Comprehensive .gitignore 
+ 
+Create .gitignore file (comprehensive): 
+ 
+gitignore 
+ Environment Variables & Secrets 
+.env 
+.env.local 
+.env.development.local 
+.env.test.local 
+.env.production.local 
+.env..local 
+
+ZeTheta Algorithms Private Limited 
+CIN No. U62012MH2023PTC410415 
+Registered Office Address: F2307 Oberoi Splendor JVLR  
+Mumbai – 400060, Maharashtra, India. 
+Email: hr@zetheta.com 
+Phone: +91-9136249369  
+ 
+Strictly Private and Confidential – Not for Circulation 
+.key 
+.pem 
+.p12 
+.pfx 
+config/secrets.json 
+config/credentials.json 
+secrets/ 
+.secret 
+.secrets 
+ 
+ API Keys & Credentials   
+api-keys.txt 
+credentials.txt 
+.api-key 
+.credentials 
+ 
+ Dependencies 
+node_modules/ 
+venv/ 
+env/ 
+ENV/ 
+.venv 
+__pycache__/ 
+.pyc 
+.pyo 
+.pyd 
+.Python 
+pip-log.txt 
+pip-delete-this-directory.txt 
+ 
+ Build Outputs 
+dist/ 
+build/ 
+.egg-info/ 
+.eggs/ 
+target/ 
+out/ 
+
+ZeTheta Algorithms Private Limited 
+CIN No. U62012MH2023PTC410415 
+Registered Office Address: F2307 Oberoi Splendor JVLR  
+Mumbai – 400060, Maharashtra, India. 
+Email: hr@zetheta.com 
+Phone: +91-9136249369  
+ 
+Strictly Private and Confidential – Not for Circulation 
+ 
+ Logs 
+logs/ 
+.log 
+npm-debug.log 
+yarn-debug.log 
+yarn-error.log 
+lerna-debug.log 
+.pnpm-debug.log 
+ 
+ IDE & Editor Files 
+.vscode/ 
+.idea/ 
+.swp 
+.swo 
+~ 
+.DS_Store 
+Thumbs.db 
+.sublime-project 
+.sublime-workspace 
+.project 
+.classpath 
+.settings/ 
+ 
+ Testing 
+coverage/ 
+.nyc_output/ 
+.pytest_cache/ 
+.coverage 
+htmlcov/ 
+.cover 
+ 
+ Temporary Files 
+tmp/ 
+temp/ 
+.tmp 
+.bak 
+
+ZeTheta Algorithms Private Limited 
+CIN No. U62012MH2023PTC410415 
+Registered Office Address: F2307 Oberoi Splendor JVLR  
+Mumbai – 400060, Maharashtra, India. 
+Email: hr@zetheta.com 
+Phone: +91-9136249369  
+ 
+Strictly Private and Confidential – Not for Circulation 
+.swp 
+.cache/ 
+ 
+ Database 
+.db 
+.sqlite 
+.sqlite3 
+.db-journal 
+ 
+ Blockchain & Crypto 
+.secret 
+contracts/secrets.json 
+hardhat/cache/ 
+hardhat/artifacts/ 
+.openzeppelin/ 
+deployments/localhost/ 
+ 
+ OS Files 
+.DS_Store 
+.DS_Store? 
+._ 
+.Spotlight-V100 
+.Trashes 
+ehthumbs.db 
+Thumbs.db 
+ 
+ Backup Files 
+.backup 
+.old 
+.orig 
+ 
+ Compiled Files 
+.com 
+.class 
+.dll 
+.exe 
+.o 
+
+ZeTheta Algorithms Private Limited 
+CIN No. U62012MH2023PTC410415 
+Registered Office Address: F2307 Oberoi Splendor JVLR  
+Mumbai – 400060, Maharashtra, India. 
+Email: hr@zetheta.com 
+Phone: +91-9136249369  
+ 
+Strictly Private and Confidential – Not for Circulation 
+.so 
+ 
+ Package Files 
+.7z 
+.dmg 
+.gz 
+.iso 
+.jar 
+.rar 
+.tar 
+.zip 
+ 
+ Media Files (if not needed) 
+.mp4 
+.mov 
+.avi 
+.wmv 
+ 
+Step 5: Initial Commit 
+ 
+bash 
+git add README.md .gitignore 
+git commit -m Initial commit: Add confidentiality notice and gitignore 
+git push origin main 
+ 
+HOUR 2-3: DEVELOPMENT ENVIRONMENT SETUP 
+ 
+For additional information refer online or query any LLMs. 
+- Complete software installation for all platforms 
+- Database schema creation with full SQL 
+- Redis configuration 
+- Blockchain node setup 
+- Testing framework configuration 
+- CI/CD pipeline setup 
+- Docker containerization 
+- Monitoring and logging setup 
+ 

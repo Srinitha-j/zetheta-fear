@@ -1,0 +1,64 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fear & Greed Meter</title>
+  <style>
+    :root { --bg1:#07111f; --bg2:#12324a; --card:#0f2030; --text:#eaf3fb; --muted:#96b4cc; --ok:#38d9a9; --warn:#ffd166; --risk:#ff6b6b; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: "Segoe UI", Tahoma, sans-serif; color:var(--text); background: radial-gradient(circle at 20% 20%, #1b4863, var(--bg1) 45%), linear-gradient(160deg, var(--bg1), var(--bg2)); min-height:100vh; }
+    .wrap { max-width: 900px; margin: 0 auto; padding: 24px; }
+    .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:16px; }
+    .card { background: rgba(15,32,48,.84); border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:16px; }
+    h1 { margin-top:0; letter-spacing:.4px; }
+    .score { font-size: 52px; font-weight: 700; }
+    .muted { color: var(--muted); }
+    ul { padding-left: 18px; margin: 8px 0 0; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Fear & Greed Meter</h1>
+    <p class="muted">Live sentiment stream + MVP dashboard starter</p>
+    <div class="grid">
+      <div class="card"><div class="muted">Score</div><div id="score" class="score">--</div></div>
+      <div class="card"><div class="muted">Label</div><div id="label">--</div></div>
+      <div class="card"><div class="muted">Contrarian Signal</div><div id="signal">--</div></div>
+    </div>
+    <div class="grid" style="margin-top:16px;">
+      <div class="card"><div class="muted">Leaderboard</div><ul id="leaderboard"></ul></div>
+      <div class="card"><div class="muted">Challenges</div><ul id="challenges"></ul></div>
+    </div>
+  </div>
+  <script>
+    async function loadStatic() {
+      const lb = await fetch('/api/leaderboard').then(r => r.json());
+      const ch = await fetch('/api/challenges').then(r => r.json());
+      document.getElementById('leaderboard').innerHTML = lb.leaderboard.map(x => `<li>${x.user}: ${x.score}</li>`).join('');
+      document.getElementById('challenges').innerHTML = ch.challenges.map(x => `<li>${x.name} (${x.active ? 'active' : 'inactive'})</li>`).join('');
+    }
+    function render(s) {
+      document.getElementById('score').textContent = s.score;
+      document.getElementById('label').textContent = s.label;
+      document.getElementById('signal').textContent = s.contrarianSignal;
+    }
+    async function loadInitial() {
+      const s = await fetch('/api/sentiment/latest').then(r => r.json());
+      render(s);
+    }
+    function connectWS() {
+      const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+      const ws = new WebSocket(`${proto}://${location.host}/ws`);
+      ws.onmessage = (event) => {
+        const msg = JSON.parse(event.data);
+        if (msg.type === 'sentiment') render(msg.data);
+      };
+      ws.onclose = () => setTimeout(connectWS, 1000);
+    }
+    loadStatic();
+    loadInitial();
+    connectWS();
+  </script>
+</body>
+</html>

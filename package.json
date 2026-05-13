@@ -1,0 +1,9 @@
+﻿{
+  "name": "fear-greed-meter-starter",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Confidential starter for Fear & Greed Meter task",
+  "scripts": {
+    "start": "node backend/src/server.js"
+  }
+}
