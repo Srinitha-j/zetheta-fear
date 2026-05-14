@@ -4,6 +4,7 @@
   "private": true,
   "description": "Confidential starter for Fear & Greed Meter task",
   "scripts": {
-    "start": "node backend/src/server.js"
+    "start": "node backend/src/server.js",
+    "smoke:test": "node backend/scripts/smoke-test.js"
   }
 }

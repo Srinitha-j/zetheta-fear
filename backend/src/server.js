@@ -3,10 +3,20 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
+const {
+  initializeStorage,
+  addSentimentSnapshot,
+  getSentimentSnapshots,
+  addGameplayEvent,
+  getGameplayEvents,
+  addUser,
+  findUserByUsername
+} = require('./storage');
 
 const port = Number(process.env.PORT || 8080);
 const wsInterval = Number(process.env.WS_INTERVAL_MS || 2000);
 const sentimentRefreshMs = Number(process.env.SENTIMENT_REFRESH_MS || 30000);
+const jwtSecret = process.env.JWT_SECRET || 'change_me';
 
 const leaderboard = [
   { user: 'player1', score: 120 },
@@ -179,11 +189,100 @@ async function refreshSentiment() {
     latestSource = 'mock_fallback';
     latestError = err && err.message ? err.message : String(err);
   }
+
+  addSentimentSnapshot({
+    ...latestSentiment,
+    source: latestSource,
+    sourceError: latestError
+  });
 }
 
 function sendJson(res, code, payload) {
   res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify(payload));
+}
+
+function base64UrlEncode(input) {
+  return Buffer.from(input)
+    .toString('base64')
+    .replace(/=/g, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_');
+}
+
+function base64UrlDecode(input) {
+  const normalized = input.replace(/-/g, '+').replace(/_/g, '/');
+  const pad = normalized.length % 4 === 0 ? '' : '='.repeat(4 - (normalized.length % 4));
+  return Buffer.from(normalized + pad, 'base64').toString('utf8');
+}
+
+function signJwt(payload) {
+  const header = { alg: 'HS256', typ: 'JWT' };
+  const data = `${base64UrlEncode(JSON.stringify(header))}.${base64UrlEncode(JSON.stringify(payload))}`;
+  const sig = crypto
+    .createHmac('sha256', jwtSecret)
+    .update(data)
+    .digest('base64')
+    .replace(/=/g, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_');
+  return `${data}.${sig}`;
+}
+
+function verifyJwt(token) {
+  const parts = token.split('.');
+  if (parts.length !== 3) throw new Error('Malformed token');
+  const [head, body, sig] = parts;
+  const data = `${head}.${body}`;
+  const expected = crypto
+    .createHmac('sha256', jwtSecret)
+    .update(data)
+    .digest('base64')
+    .replace(/=/g, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_');
+  if (sig !== expected) throw new Error('Invalid signature');
+  const payload = JSON.parse(base64UrlDecode(body));
+  if (!payload.exp || Date.now() / 1000 >= payload.exp) throw new Error('Token expired');
+  return payload;
+}
+
+function hashPassword(password, salt = crypto.randomBytes(16).toString('hex')) {
+  const digest = crypto.pbkdf2Sync(password, salt, 100000, 64, 'sha512').toString('hex');
+  return { salt, digest };
+}
+
+function verifyPassword(password, salt, digest) {
+  const trial = crypto.pbkdf2Sync(password, salt, 100000, 64, 'sha512').toString('hex');
+  return crypto.timingSafeEqual(Buffer.from(trial, 'hex'), Buffer.from(digest, 'hex'));
+}
+
+function readAuthUser(req) {
+  const auth = req.headers.authorization || '';
+  if (!auth.startsWith('Bearer ')) return null;
+  const token = auth.slice('Bearer '.length).trim();
+  if (!token) return null;
+  const payload = verifyJwt(token);
+  return { id: payload.sub, username: payload.username };
+}
+
+function readJsonBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', (chunk) => {
+      body += chunk;
+      if (body.length > 1_000_000) reject(new Error('Request body too large'));
+    });
+    req.on('end', () => {
+      if (!body) return resolve({});
+      try {
+        resolve(JSON.parse(body));
+      } catch (err) {
+        reject(new Error('Invalid JSON body'));
+      }
+    });
+    req.on('error', reject);
+  });
 }
 
 function serveFrontend(res) {
@@ -193,15 +292,91 @@ function serveFrontend(res) {
   res.end(html);
 }
 
-function handleApi(req, res) {
+async function handleApi(req, res) {
   const url = new URL(req.url, `http://${req.headers.host}`);
 
   if (url.pathname === '/api/health') {
     return sendJson(res, 200, { ok: true, at: new Date().toISOString(), source: latestSource, sourceError: latestError });
   }
+  if (url.pathname === '/api/auth/register' && req.method === 'POST') {
+    try {
+      const payload = await readJsonBody(req);
+      const username = typeof payload.username === 'string' ? payload.username.trim() : '';
+      const password = typeof payload.password === 'string' ? payload.password : '';
+      if (!/^[a-zA-Z0-9_]{3,32}$/.test(username)) {
+        return sendJson(res, 400, { error: 'username must be 3-32 chars [a-zA-Z0-9_]' });
+      }
+      if (password.length < 8) return sendJson(res, 400, { error: 'password must be at least 8 chars' });
+      if (findUserByUsername(username)) return sendJson(res, 409, { error: 'username already exists' });
+
+      const { salt, digest } = hashPassword(password);
+      addUser({ username, passwordSalt: salt, passwordDigest: digest });
+      return sendJson(res, 201, { ok: true });
+    } catch (err) {
+      return sendJson(res, 400, { error: err.message || 'Bad request' });
+    }
+  }
+  if (url.pathname === '/api/auth/login' && req.method === 'POST') {
+    try {
+      const payload = await readJsonBody(req);
+      const username = typeof payload.username === 'string' ? payload.username.trim() : '';
+      const password = typeof payload.password === 'string' ? payload.password : '';
+      const user = findUserByUsername(username);
+      if (!user || !verifyPassword(password, user.passwordSalt, user.passwordDigest)) {
+        return sendJson(res, 401, { error: 'invalid credentials' });
+      }
+      const now = Math.floor(Date.now() / 1000);
+      const token = signJwt({
+        sub: user.id,
+        username: user.username,
+        iat: now,
+        exp: now + 24 * 60 * 60
+      });
+      return sendJson(res, 200, { token, expiresIn: 24 * 60 * 60, user: { id: user.id, username: user.username } });
+    } catch (err) {
+      return sendJson(res, 400, { error: err.message || 'Bad request' });
+    }
+  }
+  if (url.pathname === '/api/auth/me' && req.method === 'GET') {
+    try {
+      const authUser = readAuthUser(req);
+      if (!authUser) return sendJson(res, 401, { error: 'missing or invalid token' });
+      return sendJson(res, 200, { user: authUser });
+    } catch (_err) {
+      return sendJson(res, 401, { error: 'missing or invalid token' });
+    }
+  }
   if (url.pathname === '/api/leaderboard') return sendJson(res, 200, { leaderboard });
   if (url.pathname === '/api/challenges') return sendJson(res, 200, { challenges });
   if (url.pathname === '/api/sentiment/latest') return sendJson(res, 200, { ...latestSentiment, source: latestSource, sourceError: latestError });
+  if (url.pathname === '/api/sentiment/history' && req.method === 'GET') {
+    const limit = clamp(Number(url.searchParams.get('limit') || 100), 1, 1000);
+    return sendJson(res, 200, { snapshots: getSentimentSnapshots(limit) });
+  }
+  if (url.pathname === '/api/events' && req.method === 'GET') {
+    const limit = clamp(Number(url.searchParams.get('limit') || 100), 1, 1000);
+    return sendJson(res, 200, { events: getGameplayEvents(limit) });
+  }
+  if (url.pathname === '/api/events' && req.method === 'POST') {
+    try {
+      const authUser = readAuthUser(req);
+      if (!authUser) return sendJson(res, 401, { error: 'missing or invalid token' });
+      const payload = await readJsonBody(req);
+      if (!payload || typeof payload.type !== 'string' || !payload.type.trim()) {
+        return sendJson(res, 400, { error: 'type is required' });
+      }
+      addGameplayEvent({
+        type: payload.type.trim(),
+        user: authUser.username,
+        userId: authUser.id,
+        challengeId: typeof payload.challengeId === 'string' ? payload.challengeId : null,
+        metadata: payload.metadata && typeof payload.metadata === 'object' ? payload.metadata : null
+      });
+      return sendJson(res, 201, { ok: true });
+    } catch (err) {
+      return sendJson(res, 400, { error: err.message || 'Bad request' });
+    }
+  }
 
   return sendJson(res, 404, { error: 'Not found' });
 }
@@ -226,7 +401,12 @@ function wsFrame(text) {
 
 const clients = new Set();
 const server = http.createServer((req, res) => {
-  if (req.url.startsWith('/api/')) return handleApi(req, res);
+  if (req.url.startsWith('/api/')) {
+    handleApi(req, res).catch((err) => {
+      sendJson(res, 500, { error: 'Internal server error', details: err.message });
+    });
+    return;
+  }
   if (req.url === '/' || req.url === '/index.html') return serveFrontend(res);
   sendJson(res, 404, { error: 'Not found' });
 });
@@ -260,6 +440,8 @@ setInterval(() => {
   }
 }, wsInterval);
 
+initializeStorage();
+addSentimentSnapshot({ ...latestSentiment, source: latestSource, sourceError: latestError });
 refreshSentiment();
 setInterval(refreshSentiment, sentimentRefreshMs);
 

@@ -9,8 +9,11 @@ This repo is a practical starter to complete the PDF task quickly with a working
 - API endpoints:
   - `GET /api/health`
   - `GET /api/sentiment/latest`
+  - `GET /api/sentiment/history?limit=100`
   - `GET /api/leaderboard`
   - `GET /api/challenges`
+  - `GET /api/events?limit=100`
+  - `POST /api/events`
 - Frontend dashboard (`frontend/index.html`)
 - Delivery docs mapped to day-wise goals
 
@@ -36,7 +39,7 @@ Open `http://localhost:8080`.
 - Documentation and checklist: `docs/`
 
 ## Next implementation priorities
-1. Add persistent storage for snapshots and gameplay events.
+1. Move file persistence to relational DB (Postgres/MySQL) with migrations.
 2. Add authentication (JWT + user table).
 3. Add prediction submission + scoring endpoints.
 4. Add tests and coverage reporting.
