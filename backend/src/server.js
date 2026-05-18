@@ -35,11 +35,12 @@ const leaderboard = [
 ];
 
 const challenges = [
-  { id: 'c1', name: 'Contrarian Call', active: true },
-  { id: 'c2', name: 'Volatility Sprint', active: true },
-  { id: 'c3', name: 'News Reaction', active: false },
-  { id: 'c4', name: 'Social Pulse', active: true },
-  { id: 'c5', name: 'Cycle Detective', active: true }
+  { id: 'c1', name: 'Contrarian Call', type: 'contrarian', active: true },
+  { id: 'c2', name: 'Volatility Sprint', type: 'volatility', active: true },
+  { id: 'c3', name: 'News Reaction', type: 'news', active: true },
+  { id: 'c4', name: 'Social Pulse', type: 'social', active: true },
+  { id: 'c5', name: 'Cycle Detective', type: 'cycle', active: true },
+  { id: 'c6', name: 'Macro Shock Watch', type: 'macro', active: true }
 ];
 
 function getMockInput() {
