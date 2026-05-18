@@ -93,10 +93,59 @@ Query params:
 ## Gameplay
 
 ### `GET /api/leaderboard`
-Returns static leaderboard array.
+Returns database-backed leaderboard aggregated from scored predictions.
+
+Query params:
+- `limit` (optional): `1..1000`
+
+Response `200`:
+```json
+{
+  "leaderboard": [
+    { "user": "player1", "score": 186 },
+    { "user": "player2", "score": 144 }
+  ]
+}
+```
 
 ### `GET /api/challenges`
 Returns challenge list.
+
+Query params:
+- `includeInactive` (optional): `1` to include inactive challenges
+
+### `POST /api/challenges` (Protected)
+Create a challenge.
+
+Request body:
+```json
+{
+  "name": "Macro Week Call",
+  "type": "macro",
+  "active": true
+}
+```
+
+Response `201`:
+```json
+{ "ok": true, "id": "1730000000000-ab12cd" }
+```
+
+### `PATCH /api/challenges/:id` (Protected)
+Update challenge fields (`name`, `type`, `active`).
+
+Response `200`:
+```json
+{ "ok": true }
+```
+
+### `DELETE /api/challenges/:id` (Protected)
+Delete a challenge.
+
+Response `200`:
+```json
+{ "ok": true }
+```
 
 ### `GET /api/events?limit=100`
 Returns gameplay events.
@@ -121,7 +170,49 @@ Response `201`:
 { "ok": true }
 ```
 
+### `POST /api/predictions` (Protected)
+Submit a prediction for an existing challenge.
+
+Request body:
+```json
+{
+  "challengeId": "1730000000000-ab12cd",
+  "predictedScore": 68,
+  "predictedLabel": "Greed"
+}
+```
+
+Response `201`:
+```json
+{ "ok": true, "id": "1730000000100-cd34ef" }
+```
+
+### `GET /api/predictions?limit=100` (Protected)
+Returns the authenticated user's predictions.
+
+### `POST /api/predictions/score` (Protected)
+Scores all pending predictions using latest sentiment snapshot.
+
+Response `200`:
+```json
+{
+  "ok": true,
+  "scored": 4,
+  "latest": {
+    "score": 61,
+    "label": "Greed",
+    "contrarianSignal": "Hold / observe",
+    "components": {
+      "news": 63,
+      "social": 57,
+      "volatility": 28
+    },
+    "generatedAt": "2026-05-18T10:00:00.000Z"
+  }
+}
+```
+
 Errors:
-- `400` invalid JSON or missing `type`
+- `400` invalid JSON or validation failure
 - `401` missing or invalid token
-- `404` unknown route
+- `404` resource or route not found

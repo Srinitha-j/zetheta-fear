@@ -15,7 +15,16 @@ const {
   addGameplayEvent,
   getGameplayEvents,
   addUser,
-  findUserByUsername
+  findUserByUsername,
+  createChallenge,
+  listChallenges,
+  updateChallenge,
+  deleteChallenge,
+  createPrediction,
+  listPredictionsByUser,
+  scorePendingPredictions,
+  getLeaderboard,
+  seedChallengesIfEmpty
 } = require('../src/storage');
 
 test('initializeStorage creates sqlite db and tables', () => {
@@ -80,4 +89,69 @@ test('user insert and lookup are case-insensitive', () => {
   const user = findUserByUsername('player_a');
   assert.ok(user);
   assert.equal(user.username, 'Player_A');
+});
+
+test('challenge CRUD works and default seeding applies once', () => {
+  seedChallengesIfEmpty([
+    { name: 'Default One', type: 'contrarian', active: true }
+  ]);
+  const seeded = listChallenges(false);
+  assert.ok(seeded.length >= 1);
+
+  const challengeId = createChallenge({ name: 'My Challenge', type: 'volatility', active: true });
+  let rows = listChallenges(false);
+  assert.equal(rows.some((r) => r.id === challengeId), true);
+
+  const updated = updateChallenge(challengeId, { name: 'Updated', active: false });
+  assert.equal(updated, true);
+  rows = listChallenges(false);
+  const row = rows.find((r) => r.id === challengeId);
+  assert.equal(row.name, 'Updated');
+  assert.equal(row.active, false);
+
+  const deleted = deleteChallenge(challengeId);
+  assert.equal(deleted, true);
+});
+
+test('prediction create/list and scoring works', () => {
+  const challengeId = createChallenge({ name: 'Scoring Challenge', type: 'news', active: true });
+  createPrediction({
+    userId: 'u-1',
+    username: 'user1',
+    challengeId,
+    predictedScore: 72,
+    predictedLabel: 'Greed'
+  });
+  const before = listPredictionsByUser('u-1', 10);
+  assert.equal(before.length >= 1, true);
+  assert.equal(before[0].status, 'pending');
+
+  const scoredCount = scorePendingPredictions(70, 'Greed');
+  assert.equal(scoredCount >= 1, true);
+  const after = listPredictionsByUser('u-1', 10);
+  assert.equal(after[0].status, 'scored');
+  assert.equal(typeof after[0].points, 'number');
+});
+
+test('leaderboard aggregates scored prediction points', () => {
+  const challengeId = createChallenge({ name: 'Leaderboard Challenge', type: 'macro', active: true });
+  createPrediction({
+    userId: 'u-2',
+    username: 'user2',
+    challengeId,
+    predictedScore: 70,
+    predictedLabel: 'Greed'
+  });
+  createPrediction({
+    userId: 'u-3',
+    username: 'user3',
+    challengeId,
+    predictedScore: 25,
+    predictedLabel: 'Fear'
+  });
+  scorePendingPredictions(70, 'Greed');
+  const rows = getLeaderboard(10);
+  assert.equal(rows.length >= 2, true);
+  assert.equal(rows.every((r) => typeof r.user === 'string' && typeof r.score === 'number'), true);
+  assert.equal(rows[0].score >= rows[1].score, true);
 });

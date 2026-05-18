@@ -114,6 +114,22 @@
 
       <article class="card">
         <div class="row">
+          <strong>Account</strong>
+          <button id="logoutBtn" class="btn">Logout</button>
+        </div>
+        <div class="sliders">
+          <label>Username<input id="authUsername" type="text" placeholder="player1"></label>
+          <label>Password<input id="authPassword" type="password" placeholder="min 8 chars"></label>
+        </div>
+        <div class="row" style="margin-top:10px;">
+          <button id="registerBtn" class="btn">Register</button>
+          <button id="loginBtn" class="btn">Login</button>
+        </div>
+        <p id="authState" class="tiny">Not logged in</p>
+      </article>
+
+      <article class="card">
+        <div class="row">
           <strong>Interactive Sandbox</strong>
           <button id="syncLive" class="btn">Sync From Live</button>
         </div>
@@ -136,6 +152,16 @@
         <ul id="challenges" class="list"></ul>
       </article>
     </section>
+
+    <section class="cols">
+      <article class="card">
+        <div class="row">
+          <strong>My Predictions</strong>
+          <button id="scorePending" class="btn">Score Pending</button>
+        </div>
+        <ul id="predictions" class="list"></ul>
+      </article>
+    </section>
   </div>
 
   <script>
@@ -154,6 +180,14 @@
     const newsV = document.getElementById('newsV');
     const socialV = document.getElementById('socialV');
     const volV = document.getElementById('volV');
+    const leaderboardEl = document.getElementById('leaderboard');
+    const challengesEl = document.getElementById('challenges');
+    const predictionsEl = document.getElementById('predictions');
+    const authUsernameEl = document.getElementById('authUsername');
+    const authPasswordEl = document.getElementById('authPassword');
+    const authStateEl = document.getElementById('authState');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const challengeNameById = new Map();
 
     function clamp(n, min, max) { return Math.max(min, Math.min(max, n)); }
     function scoreLabel(score) {
@@ -197,33 +231,146 @@
       render(compute(news, social, volatility), 'sandbox');
     }
 
-    async function autoLogin() {
-      const username = 'guest_' + Math.random().toString(36).slice(2, 7);
-      const password = 'guestpass123';
-      await fetch('/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) });
-      const login = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) }).then(r => r.json());
-      authToken = login.token || null;
+    function setAuthState(text) {
+      authStateEl.textContent = text;
     }
 
-    async function loadLists() {
-      const lb = await fetch('/api/leaderboard').then(r => r.json());
+    function setAuthToken(token) {
+      authToken = token || null;
+      if (authToken) localStorage.setItem('fg_token', authToken);
+      else localStorage.removeItem('fg_token');
+    }
+
+    async function fetchMe() {
+      if (!authToken) return null;
+      const meRes = await fetch('/api/auth/me', {
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      });
+      if (!meRes.ok) return null;
+      const me = await meRes.json();
+      return me && me.user ? me.user : null;
+    }
+
+    async function register() {
+      const username = authUsernameEl.value.trim();
+      const password = authPasswordEl.value;
+      if (!username || password.length < 8) {
+        setAuthState('Username required, password must be at least 8 chars');
+        return;
+      }
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setAuthState(`Register failed: ${data.error || 'unknown error'}`);
+        return;
+      }
+      setAuthState('Registered. Please login.');
+    }
+
+    async function login() {
+      const username = authUsernameEl.value.trim();
+      const password = authPasswordEl.value;
+      if (!username || !password) {
+        setAuthState('Enter username and password');
+        return;
+      }
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.token) {
+        setAuthState(`Login failed: ${data.error || 'unknown error'}`);
+        return;
+      }
+      setAuthToken(data.token);
+      const me = await fetchMe();
+      setAuthState(me ? `Logged in as ${me.username}` : 'Logged in');
+      await loadPredictions();
+    }
+
+    async function restoreAuth() {
+      const saved = localStorage.getItem('fg_token');
+      if (!saved) {
+        setAuthState('Not logged in');
+        return;
+      }
+      setAuthToken(saved);
+      const me = await fetchMe();
+      if (!me) {
+        setAuthToken(null);
+        setAuthState('Session expired. Please login again.');
+        return;
+      }
+      setAuthState(`Logged in as ${me.username}`);
+    }
+
+    function logout() {
+      setAuthToken(null);
+      predictionsEl.innerHTML = '<li>Login to view predictions</li>';
+      setAuthState('Logged out');
+    }
+
+    async function loadLeaderboard() {
+      const lb = await fetch('/api/leaderboard?limit=10').then(r => r.json());
+      leaderboardEl.innerHTML = (lb.leaderboard || []).map(x => `<li>${x.user}: <strong>${x.score}</strong></li>`).join('') || '<li>No scores yet</li>';
+    }
+
+    async function loadChallenges() {
       const ch = await fetch('/api/challenges').then(r => r.json());
-      document.getElementById('leaderboard').innerHTML = lb.leaderboard.map(x => `<li>${x.user}: <strong>${x.score}</strong></li>`).join('');
-      document.getElementById('challenges').innerHTML = ch.challenges.filter(x => x.active).map(x => (
+      challengeNameById.clear();
+      (ch.challenges || []).forEach((c) => challengeNameById.set(c.id, c.name));
+      challengesEl.innerHTML = (ch.challenges || []).filter(x => x.active).map(x => (
         `<li class="challenge"><span>${x.name}</span><button class="btn" data-cid="${x.id}">Predict</button></li>`
-      )).join('');
+      )).join('') || '<li>No active challenges</li>';
       document.querySelectorAll('[data-cid]').forEach((btn) => {
         btn.addEventListener('click', async () => {
-          if (!authToken) return;
+          if (!authToken) {
+            setAuthState('Login required to submit predictions');
+            return;
+          }
+          const sandbox = compute(Number(sliderNews.value), Number(sliderSocial.value), Number(sliderVol.value));
+          const res = await fetch('/api/predictions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+            body: JSON.stringify({
+              challengeId: btn.dataset.cid,
+              predictedScore: sandbox.score,
+              predictedLabel: sandbox.label
+            })
+          });
+          if (!res.ok) return;
           await fetch('/api/events', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-            body: JSON.stringify({ type: 'prediction_submitted', challengeId: btn.dataset.cid, metadata: { source: 'ui' } })
+            body: JSON.stringify({ type: 'prediction_submitted', challengeId: btn.dataset.cid, metadata: { source: 'ui', score: sandbox.score, label: sandbox.label } })
           });
-          btn.textContent = 'Logged';
+          btn.textContent = 'Submitted';
           btn.disabled = true;
+          await loadPredictions();
+          await loadLeaderboard();
         });
       });
+    }
+
+    async function loadPredictions() {
+      if (!authToken) {
+        predictionsEl.innerHTML = '<li>Login to view predictions</li>';
+        return;
+      }
+      const data = await fetch('/api/predictions?limit=10', {
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      }).then(r => r.json());
+      predictionsEl.innerHTML = (data.predictions || []).map((p) => {
+        const status = p.status === 'scored' ? `scored (${p.points} pts)` : 'pending';
+        const challengeName = challengeNameById.get(p.challengeId) || p.challengeId;
+        return `<li>${challengeName}: <strong>${p.predictedScore}</strong> ${p.predictedLabel || ''} - ${status}</li>`;
+      }).join('') || '<li>No predictions yet</li>';
     }
 
     async function loadInitial() {
@@ -259,10 +406,27 @@
       sliderVol.value = liveLatest.components.volatility;
       updateSandbox();
     });
+    document.getElementById('scorePending').addEventListener('click', async () => {
+      if (!authToken) {
+        setAuthState('Login required to score predictions');
+        return;
+      }
+      await fetch('/api/predictions/score', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      });
+      await loadPredictions();
+      await loadLeaderboard();
+    });
+    document.getElementById('registerBtn').addEventListener('click', register);
+    document.getElementById('loginBtn').addEventListener('click', login);
+    logoutBtn.addEventListener('click', logout);
 
     (async function boot() {
-      await autoLogin();
-      await loadLists();
+      await restoreAuth();
+      await loadLeaderboard();
+      await loadChallenges();
+      await loadPredictions();
       await loadInitial();
       connectWS();
     })();

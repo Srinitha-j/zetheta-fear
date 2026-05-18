@@ -8,11 +8,11 @@
 - API service: REST endpoints for dashboard + game actions
 
 ## Data model (minimum)
-- users(id, email, password_hash, created_at)
-- sentiment_snapshots(id, score, label, news, social, volatility, created_at)
-- challenges(id, type, prompt, open_at, close_at, status)
-- predictions(id, user_id, challenge_id, guess, points, created_at)
-- leaderboard_cache(user_id, score, rank, updated_at)
+- users(id, created_at, username, password_salt, password_digest)
+- sentiment_snapshots(id, score, label, contrarian_signal, news, social, volatility, generated_at, source, source_error)
+- challenges(id, created_at, updated_at, name, type, active, created_by_user_id, created_by_username)
+- predictions(id, created_at, updated_at, user_id, username, challenge_id, predicted_score, predicted_label, status, actual_score, actual_label, points, scored_at)
+- leaderboard is computed on read from scored predictions (no cache table in current MVP)
 
 ## Scoring bands
 - 0-24: Extreme Fear

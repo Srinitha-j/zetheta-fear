@@ -20,7 +20,16 @@ const {
   addGameplayEvent,
   getGameplayEvents,
   addUser,
-  findUserByUsername
+  findUserByUsername,
+  listChallenges,
+  createChallenge,
+  updateChallenge,
+  deleteChallenge,
+  createPrediction,
+  listPredictionsByUser,
+  scorePendingPredictions,
+  getLeaderboard,
+  seedChallengesIfEmpty
 } = require('./storage');
 
 const port = Number(process.env.PORT || 8080);
@@ -28,13 +37,7 @@ const wsInterval = Number(process.env.WS_INTERVAL_MS || 2000);
 const sentimentRefreshMs = Number(process.env.SENTIMENT_REFRESH_MS || 30000);
 const jwtSecret = process.env.JWT_SECRET || 'change_me';
 
-const leaderboard = [
-  { user: 'player1', score: 120 },
-  { user: 'player2', score: 95 },
-  { user: 'player3', score: 80 }
-];
-
-const challenges = [
+const defaultChallenges = [
   { id: 'c1', name: 'Contrarian Call', type: 'contrarian', active: true },
   { id: 'c2', name: 'Volatility Sprint', type: 'volatility', active: true },
   { id: 'c3', name: 'News Reaction', type: 'news', active: true },
@@ -152,6 +155,7 @@ async function refreshSentiment() {
     source: latestSource,
     sourceError: latestError
   });
+  scorePendingPredictions(latestSentiment.score, latestSentiment.label);
 }
 
 function sendJson(res, code, payload) {
@@ -196,6 +200,7 @@ function serveFrontend(res) {
 
 async function handleApi(req, res) {
   const url = new URL(req.url, `http://${req.headers.host}`);
+  const challengeIdMatch = url.pathname.match(/^\/api\/challenges\/([^/]+)$/);
 
   if (url.pathname === '/api/health') {
     return sendJson(res, 200, { ok: true, at: new Date().toISOString(), source: latestSource, sourceError: latestError });
@@ -248,8 +253,57 @@ async function handleApi(req, res) {
       return sendJson(res, 401, { error: 'missing or invalid token' });
     }
   }
-  if (url.pathname === '/api/leaderboard') return sendJson(res, 200, { leaderboard });
-  if (url.pathname === '/api/challenges') return sendJson(res, 200, { challenges });
+  if (url.pathname === '/api/leaderboard' && req.method === 'GET') {
+    const limit = clamp(Number(url.searchParams.get('limit') || 100), 1, 1000);
+    return sendJson(res, 200, { leaderboard: getLeaderboard(limit) });
+  }
+  if (url.pathname === '/api/challenges' && req.method === 'GET') {
+    const includeInactive = url.searchParams.get('includeInactive') === '1';
+    return sendJson(res, 200, { challenges: listChallenges(!includeInactive) });
+  }
+  if (url.pathname === '/api/challenges' && req.method === 'POST') {
+    try {
+      const authUser = readAuthUser(req);
+      if (!authUser) return sendJson(res, 401, { error: 'missing or invalid token' });
+      const payload = await readJsonBody(req);
+      const name = typeof payload.name === 'string' ? payload.name.trim() : '';
+      const type = typeof payload.type === 'string' ? payload.type.trim() : '';
+      if (!name || !type) return sendJson(res, 400, { error: 'name and type are required' });
+      const id = createChallenge({
+        name,
+        type,
+        active: payload.active !== false,
+        createdByUserId: authUser.id,
+        createdByUsername: authUser.username
+      });
+      return sendJson(res, 201, { ok: true, id });
+    } catch (err) {
+      return sendJson(res, 400, { error: err.message || 'Bad request' });
+    }
+  }
+  if (challengeIdMatch && req.method === 'PATCH') {
+    try {
+      const authUser = readAuthUser(req);
+      if (!authUser) return sendJson(res, 401, { error: 'missing or invalid token' });
+      const payload = await readJsonBody(req);
+      const ok = updateChallenge(challengeIdMatch[1], {
+        name: typeof payload.name === 'string' ? payload.name.trim() : undefined,
+        type: typeof payload.type === 'string' ? payload.type.trim() : undefined,
+        active: typeof payload.active === 'boolean' ? payload.active : undefined
+      });
+      if (!ok) return sendJson(res, 404, { error: 'challenge not found' });
+      return sendJson(res, 200, { ok: true });
+    } catch (err) {
+      return sendJson(res, 400, { error: err.message || 'Bad request' });
+    }
+  }
+  if (challengeIdMatch && req.method === 'DELETE') {
+    const authUser = readAuthUser(req);
+    if (!authUser) return sendJson(res, 401, { error: 'missing or invalid token' });
+    const ok = deleteChallenge(challengeIdMatch[1]);
+    if (!ok) return sendJson(res, 404, { error: 'challenge not found' });
+    return sendJson(res, 200, { ok: true });
+  }
   if (url.pathname === '/api/sentiment/latest') return sendJson(res, 200, { ...latestSentiment, source: latestSource, sourceError: latestError });
   if (url.pathname === '/api/sentiment/history' && req.method === 'GET') {
     const limit = clamp(Number(url.searchParams.get('limit') || 100), 1, 1000);
@@ -278,6 +332,45 @@ async function handleApi(req, res) {
     } catch (err) {
       return sendJson(res, 400, { error: err.message || 'Bad request' });
     }
+  }
+  if (url.pathname === '/api/predictions' && req.method === 'POST') {
+    try {
+      const authUser = readAuthUser(req);
+      if (!authUser) return sendJson(res, 401, { error: 'missing or invalid token' });
+      const payload = await readJsonBody(req);
+      const challengeId = typeof payload.challengeId === 'string' ? payload.challengeId.trim() : '';
+      const predictedScore = Number(payload.predictedScore);
+      const predictedLabel = typeof payload.predictedLabel === 'string' ? payload.predictedLabel.trim() : null;
+      if (!challengeId) return sendJson(res, 400, { error: 'challengeId is required' });
+      if (!Number.isFinite(predictedScore) || predictedScore < 0 || predictedScore > 100) {
+        return sendJson(res, 400, { error: 'predictedScore must be 0-100' });
+      }
+      const challengeExists = listChallenges(false).some((c) => c.id === challengeId);
+      if (!challengeExists) return sendJson(res, 404, { error: 'challenge not found' });
+
+      const id = createPrediction({
+        userId: authUser.id,
+        username: authUser.username,
+        challengeId,
+        predictedScore: Math.round(predictedScore),
+        predictedLabel
+      });
+      return sendJson(res, 201, { ok: true, id });
+    } catch (err) {
+      return sendJson(res, 400, { error: err.message || 'Bad request' });
+    }
+  }
+  if (url.pathname === '/api/predictions' && req.method === 'GET') {
+    const authUser = readAuthUser(req);
+    if (!authUser) return sendJson(res, 401, { error: 'missing or invalid token' });
+    const limit = clamp(Number(url.searchParams.get('limit') || 100), 1, 1000);
+    return sendJson(res, 200, { predictions: listPredictionsByUser(authUser.id, limit) });
+  }
+  if (url.pathname === '/api/predictions/score' && req.method === 'POST') {
+    const authUser = readAuthUser(req);
+    if (!authUser) return sendJson(res, 401, { error: 'missing or invalid token' });
+    const scored = scorePendingPredictions(latestSentiment.score, latestSentiment.label);
+    return sendJson(res, 200, { ok: true, scored, latest: latestSentiment });
   }
 
   return sendJson(res, 404, { error: 'Not found' });
@@ -343,6 +436,7 @@ setInterval(() => {
 }, wsInterval);
 
 initializeStorage();
+seedChallengesIfEmpty(defaultChallenges);
 addSentimentSnapshot({ ...latestSentiment, source: latestSource, sourceError: latestError });
 refreshSentiment();
 setInterval(refreshSentiment, sentimentRefreshMs);

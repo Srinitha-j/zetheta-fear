@@ -79,6 +79,31 @@ function initializeStorage() {
       password_salt TEXT NOT NULL,
       password_digest TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS challenges (
+      id TEXT PRIMARY KEY,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      name TEXT NOT NULL,
+      type TEXT NOT NULL,
+      active INTEGER NOT NULL DEFAULT 1,
+      created_by_user_id TEXT,
+      created_by_username TEXT
+    );
+    CREATE TABLE IF NOT EXISTS predictions (
+      id TEXT PRIMARY KEY,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      username TEXT NOT NULL,
+      challenge_id TEXT NOT NULL,
+      predicted_score INTEGER NOT NULL,
+      predicted_label TEXT,
+      status TEXT NOT NULL,
+      actual_score INTEGER,
+      actual_label TEXT,
+      points INTEGER,
+      scored_at TEXT
+    );
   `);
 
   migrateJsonIfNeeded();
@@ -224,6 +249,180 @@ function findUserByUsername(username) {
   };
 }
 
+function listChallenges(activeOnly = false) {
+  const conn = getDb();
+  const sql = activeOnly
+    ? `
+      SELECT id, created_at, updated_at, name, type, active, created_by_user_id, created_by_username
+      FROM challenges
+      WHERE active = 1
+      ORDER BY created_at DESC
+    `
+    : `
+      SELECT id, created_at, updated_at, name, type, active, created_by_user_id, created_by_username
+      FROM challenges
+      ORDER BY created_at DESC
+    `;
+  return conn.prepare(sql).all().map((row) => ({
+    id: row.id,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    name: row.name,
+    type: row.type,
+    active: Boolean(row.active),
+    createdByUserId: row.created_by_user_id,
+    createdByUsername: row.created_by_username
+  }));
+}
+
+function createChallenge(challenge) {
+  const conn = getDb();
+  const id = `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+  const now = new Date().toISOString();
+  conn.prepare(`
+    INSERT INTO challenges (id, created_at, updated_at, name, type, active, created_by_user_id, created_by_username)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    id,
+    now,
+    now,
+    String(challenge.name),
+    String(challenge.type),
+    challenge.active ? 1 : 0,
+    challenge.createdByUserId ? String(challenge.createdByUserId) : null,
+    challenge.createdByUsername ? String(challenge.createdByUsername) : null
+  );
+  return id;
+}
+
+function updateChallenge(id, patch) {
+  const conn = getDb();
+  const existing = conn.prepare(`
+    SELECT id, name, type, active FROM challenges WHERE id = ? LIMIT 1
+  `).get(id);
+  if (!existing) return false;
+  const name = patch.name != null ? String(patch.name) : existing.name;
+  const type = patch.type != null ? String(patch.type) : existing.type;
+  const active = patch.active != null ? (patch.active ? 1 : 0) : existing.active;
+  conn.prepare(`
+    UPDATE challenges
+    SET name = ?, type = ?, active = ?, updated_at = ?
+    WHERE id = ?
+  `).run(name, type, active, new Date().toISOString(), id);
+  return true;
+}
+
+function deleteChallenge(id) {
+  const conn = getDb();
+  const res = conn.prepare('DELETE FROM challenges WHERE id = ?').run(id);
+  return Number(res.changes || 0) > 0;
+}
+
+function createPrediction(prediction) {
+  const conn = getDb();
+  const id = `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+  const now = new Date().toISOString();
+  conn.prepare(`
+    INSERT INTO predictions
+    (id, created_at, updated_at, user_id, username, challenge_id, predicted_score, predicted_label, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    id,
+    now,
+    now,
+    String(prediction.userId),
+    String(prediction.username),
+    String(prediction.challengeId),
+    Number(prediction.predictedScore),
+    prediction.predictedLabel ? String(prediction.predictedLabel) : null,
+    'pending'
+  );
+  return id;
+}
+
+function listPredictionsByUser(userId, limit = 100) {
+  const conn = getDb();
+  return conn.prepare(`
+    SELECT id, created_at, updated_at, user_id, username, challenge_id, predicted_score, predicted_label, status, actual_score, actual_label, points, scored_at
+    FROM predictions
+    WHERE user_id = ?
+    ORDER BY created_at DESC
+    LIMIT ?
+  `).all(userId, Math.max(1, limit)).map((row) => ({
+    id: row.id,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    userId: row.user_id,
+    username: row.username,
+    challengeId: row.challenge_id,
+    predictedScore: row.predicted_score,
+    predictedLabel: row.predicted_label,
+    status: row.status,
+    actualScore: row.actual_score,
+    actualLabel: row.actual_label,
+    points: row.points,
+    scoredAt: row.scored_at
+  }));
+}
+
+function scorePendingPredictions(actualScore, actualLabel) {
+  const conn = getDb();
+  const pending = conn.prepare(`
+    SELECT id, predicted_score, predicted_label
+    FROM predictions
+    WHERE status = 'pending'
+  `).all();
+  const update = conn.prepare(`
+    UPDATE predictions
+    SET status = 'scored',
+        actual_score = ?,
+        actual_label = ?,
+        points = ?,
+        scored_at = ?,
+        updated_at = ?
+    WHERE id = ?
+  `);
+  const now = new Date().toISOString();
+  for (const row of pending) {
+    const diff = Math.abs(Number(row.predicted_score) - Number(actualScore));
+    const base = Math.max(0, 100 - diff * 2);
+    const bonus = row.predicted_label && actualLabel && String(row.predicted_label) === String(actualLabel) ? 10 : 0;
+    const points = Math.min(100, base + bonus);
+    update.run(Number(actualScore), actualLabel ? String(actualLabel) : null, points, now, now, row.id);
+  }
+  return pending.length;
+}
+
+function getLeaderboard(limit = 100) {
+  const conn = getDb();
+  return conn.prepare(`
+    SELECT username, COALESCE(SUM(points), 0) AS score
+    FROM predictions
+    WHERE status = 'scored'
+    GROUP BY user_id, username
+    ORDER BY score DESC, username ASC
+    LIMIT ?
+  `).all(Math.max(1, limit)).map((row) => ({
+    user: row.username,
+    score: Number(row.score)
+  }));
+}
+
+function seedChallengesIfEmpty(defaults) {
+  const conn = getDb();
+  const existing = Number(conn.prepare('SELECT COUNT(1) AS c FROM challenges').get().c);
+  if (existing > 0) return;
+  for (const ch of defaults) {
+    createChallenge({
+      name: ch.name,
+      type: ch.type,
+      active: ch.active !== false,
+      createdByUserId: null,
+      createdByUsername: 'system'
+    });
+  }
+}
+
 function migrateJsonIfNeeded() {
   const conn = getDb();
   const counts = {
@@ -300,5 +499,14 @@ module.exports = {
   addGameplayEvent,
   getGameplayEvents,
   addUser,
-  findUserByUsername
+  findUserByUsername,
+  listChallenges,
+  createChallenge,
+  updateChallenge,
+  deleteChallenge,
+  createPrediction,
+  listPredictionsByUser,
+  scorePendingPredictions,
+  getLeaderboard,
+  seedChallengesIfEmpty
 };
