@@ -115,7 +115,7 @@ Query params:
 - `includeInactive` (optional): `1` to include inactive challenges
 
 ### `POST /api/challenges` (Protected)
-Create a challenge.
+Create a challenge (admin only).
 
 Request body:
 ```json
@@ -133,6 +133,7 @@ Response `201`:
 
 ### `PATCH /api/challenges/:id` (Protected)
 Update challenge fields (`name`, `type`, `active`).
+Allowed for challenge creator or admin.
 
 Response `200`:
 ```json
@@ -141,6 +142,7 @@ Response `200`:
 
 ### `DELETE /api/challenges/:id` (Protected)
 Delete a challenge.
+Allowed for challenge creator or admin.
 
 Response `200`:
 ```json
@@ -215,4 +217,6 @@ Response `200`:
 Errors:
 - `400` invalid JSON or validation failure
 - `401` missing or invalid token
+- `403` role/permission denied
+- `409` duplicate pending prediction for same user/challenge
 - `404` resource or route not found

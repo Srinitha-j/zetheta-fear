@@ -21,11 +21,14 @@ const {
   getGameplayEvents,
   addUser,
   findUserByUsername,
+  findUserById,
   listChallenges,
+  getChallengeById,
   createChallenge,
   updateChallenge,
   deleteChallenge,
   createPrediction,
+  hasPendingPrediction,
   listPredictionsByUser,
   scorePendingPredictions,
   getLeaderboard,
@@ -169,7 +172,11 @@ function readAuthUser(req) {
   const token = auth.slice('Bearer '.length).trim();
   if (!token) return null;
   const payload = verifyJwt(token, jwtSecret);
-  return { id: payload.sub, username: payload.username };
+  return { id: payload.sub, username: payload.username, role: payload.role || 'member' };
+}
+
+function canManageChallenge(authUser, challenge) {
+  return Boolean(authUser && challenge && (authUser.role === 'admin' || challenge.createdByUserId === authUser.id));
 }
 
 function readJsonBody(req) {
@@ -236,10 +243,11 @@ async function handleApi(req, res) {
       const token = signJwt({
         sub: user.id,
         username: user.username,
+        role: user.role || 'member',
         iat: now,
         exp: now + 24 * 60 * 60
       }, jwtSecret);
-      return sendJson(res, 200, { token, expiresIn: 24 * 60 * 60, user: { id: user.id, username: user.username } });
+      return sendJson(res, 200, { token, expiresIn: 24 * 60 * 60, user: { id: user.id, username: user.username, role: user.role || 'member' } });
     } catch (err) {
       return sendJson(res, 400, { error: err.message || 'Bad request' });
     }
@@ -248,7 +256,8 @@ async function handleApi(req, res) {
     try {
       const authUser = readAuthUser(req);
       if (!authUser) return sendJson(res, 401, { error: 'missing or invalid token' });
-      return sendJson(res, 200, { user: authUser });
+      const fullUser = findUserById(authUser.id);
+      return sendJson(res, 200, { user: fullUser ? { id: fullUser.id, username: fullUser.username, role: fullUser.role } : authUser });
     } catch (_err) {
       return sendJson(res, 401, { error: 'missing or invalid token' });
     }
@@ -265,6 +274,7 @@ async function handleApi(req, res) {
     try {
       const authUser = readAuthUser(req);
       if (!authUser) return sendJson(res, 401, { error: 'missing or invalid token' });
+      if (authUser.role !== 'admin') return sendJson(res, 403, { error: 'admin role required' });
       const payload = await readJsonBody(req);
       const name = typeof payload.name === 'string' ? payload.name.trim() : '';
       const type = typeof payload.type === 'string' ? payload.type.trim() : '';
@@ -285,6 +295,9 @@ async function handleApi(req, res) {
     try {
       const authUser = readAuthUser(req);
       if (!authUser) return sendJson(res, 401, { error: 'missing or invalid token' });
+      const challenge = getChallengeById(challengeIdMatch[1]);
+      if (!challenge) return sendJson(res, 404, { error: 'challenge not found' });
+      if (!canManageChallenge(authUser, challenge)) return sendJson(res, 403, { error: 'not allowed to manage this challenge' });
       const payload = await readJsonBody(req);
       const ok = updateChallenge(challengeIdMatch[1], {
         name: typeof payload.name === 'string' ? payload.name.trim() : undefined,
@@ -300,6 +313,9 @@ async function handleApi(req, res) {
   if (challengeIdMatch && req.method === 'DELETE') {
     const authUser = readAuthUser(req);
     if (!authUser) return sendJson(res, 401, { error: 'missing or invalid token' });
+    const challenge = getChallengeById(challengeIdMatch[1]);
+    if (!challenge) return sendJson(res, 404, { error: 'challenge not found' });
+    if (!canManageChallenge(authUser, challenge)) return sendJson(res, 403, { error: 'not allowed to manage this challenge' });
     const ok = deleteChallenge(challengeIdMatch[1]);
     if (!ok) return sendJson(res, 404, { error: 'challenge not found' });
     return sendJson(res, 200, { ok: true });
@@ -347,6 +363,9 @@ async function handleApi(req, res) {
       }
       const challengeExists = listChallenges(false).some((c) => c.id === challengeId);
       if (!challengeExists) return sendJson(res, 404, { error: 'challenge not found' });
+      if (hasPendingPrediction(authUser.id, challengeId)) {
+        return sendJson(res, 409, { error: 'pending prediction already exists for this challenge' });
+      }
 
       const id = createPrediction({
         userId: authUser.id,

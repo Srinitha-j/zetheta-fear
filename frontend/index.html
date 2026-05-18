@@ -78,6 +78,15 @@
     .sliders label { display: grid; gap: 4px; color: var(--muted); font-size: 0.92rem; }
     input[type="range"] { width: 100%; accent-color: var(--accent); }
     .tiny { color: var(--muted); font-size: 0.85rem; margin-top: 8px; }
+    .auth-input { border: 1px solid var(--line); background: #121826; color: var(--ink); border-radius: 10px; padding: 10px 12px; font-family: inherit; }
+    .auth-input.invalid { border-color: var(--fear); box-shadow: 0 0 0 2px rgba(255, 90, 71, 0.18); }
+    .auth-error { color: #ffb3a9; font-size: 0.82rem; min-height: 1em; }
+    .auth-state-error { color: #ffb3a9; }
+    .auth-state-ok { color: #9ee9bf; }
+    .toasts { position: fixed; right: 16px; bottom: 16px; display: grid; gap: 8px; z-index: 99; }
+    .toast { border: 1px solid var(--line); background: #0f1725; color: var(--ink); padding: 10px 12px; border-radius: 10px; min-width: 220px; }
+    .toast.ok { border-color: rgba(75, 227, 155, 0.45); }
+    .toast.err { border-color: rgba(255, 90, 71, 0.45); }
     @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
     @media (max-width: 920px) {
       .grid { grid-template-columns: 1fr; }
@@ -118,8 +127,10 @@
           <button id="logoutBtn" class="btn">Logout</button>
         </div>
         <div class="sliders">
-          <label>Username<input id="authUsername" type="text" placeholder="player1"></label>
-          <label>Password<input id="authPassword" type="password" placeholder="min 8 chars"></label>
+          <label>Username<input id="authUsername" class="auth-input" type="text" placeholder="player1"></label>
+          <p id="usernameErr" class="auth-error"></p>
+          <label>Password<input id="authPassword" class="auth-input" type="password" placeholder="min 8 chars"></label>
+          <p id="passwordErr" class="auth-error"></p>
         </div>
         <div class="row" style="margin-top:10px;">
           <button id="registerBtn" class="btn">Register</button>
@@ -162,7 +173,23 @@
         <ul id="predictions" class="list"></ul>
       </article>
     </section>
+
+    <section class="cols">
+      <article class="card">
+        <strong>Manage Challenges</strong>
+        <div class="sliders">
+          <label>Name<input id="newChallengeName" class="auth-input" type="text" placeholder="Macro Week Call"></label>
+          <label>Type<input id="newChallengeType" class="auth-input" type="text" placeholder="macro"></label>
+        </div>
+        <div class="row" style="margin-top:10px;">
+          <button id="createChallengeBtn" class="btn">Create Challenge</button>
+        </div>
+        <p id="challengeAdminState" class="tiny">Login required</p>
+        <ul id="challengeAdminList" class="list"></ul>
+      </article>
+    </section>
   </div>
+  <div id="toasts" class="toasts"></div>
 
   <script>
     let authToken = null;
@@ -186,10 +213,26 @@
     const authUsernameEl = document.getElementById('authUsername');
     const authPasswordEl = document.getElementById('authPassword');
     const authStateEl = document.getElementById('authState');
+    const usernameErrEl = document.getElementById('usernameErr');
+    const passwordErrEl = document.getElementById('passwordErr');
     const logoutBtn = document.getElementById('logoutBtn');
+    const newChallengeNameEl = document.getElementById('newChallengeName');
+    const newChallengeTypeEl = document.getElementById('newChallengeType');
+    const createChallengeBtn = document.getElementById('createChallengeBtn');
+    const challengeAdminStateEl = document.getElementById('challengeAdminState');
+    const challengeAdminListEl = document.getElementById('challengeAdminList');
+    const toastsEl = document.getElementById('toasts');
     const challengeNameById = new Map();
+    let allChallenges = [];
 
     function clamp(n, min, max) { return Math.max(min, Math.min(max, n)); }
+    function showToast(message, type = 'ok') {
+      const node = document.createElement('div');
+      node.className = `toast ${type === 'error' ? 'err' : 'ok'}`;
+      node.textContent = message;
+      toastsEl.appendChild(node);
+      setTimeout(() => node.remove(), 2400);
+    }
     function scoreLabel(score) {
       if (score <= 24) return 'Extreme Fear';
       if (score <= 44) return 'Fear';
@@ -231,8 +274,38 @@
       render(compute(news, social, volatility), 'sandbox');
     }
 
-    function setAuthState(text) {
+    function setAuthState(text, type) {
       authStateEl.textContent = text;
+      authStateEl.classList.remove('auth-state-error', 'auth-state-ok');
+      if (type === 'error') authStateEl.classList.add('auth-state-error');
+      if (type === 'ok') authStateEl.classList.add('auth-state-ok');
+    }
+
+    function validateUsername(username) {
+      if (!username) return 'Username is required';
+      if (!/^[a-zA-Z0-9_]{3,32}$/.test(username)) return 'Use 3-32 chars: letters, numbers, underscore';
+      return '';
+    }
+
+    function validatePassword(password) {
+      if (!password) return 'Password is required';
+      if (password.length < 8) return 'Password must be at least 8 chars';
+      return '';
+    }
+
+    function paintFieldState(inputEl, errorEl, message) {
+      errorEl.textContent = message || '';
+      inputEl.classList.toggle('invalid', Boolean(message));
+    }
+
+    function validateAuthForm() {
+      const username = authUsernameEl.value.trim();
+      const password = authPasswordEl.value;
+      const userErr = validateUsername(username);
+      const passErr = validatePassword(password);
+      paintFieldState(authUsernameEl, usernameErrEl, userErr);
+      paintFieldState(authPasswordEl, passwordErrEl, passErr);
+      return !userErr && !passErr;
     }
 
     function setAuthToken(token) {
@@ -254,8 +327,8 @@
     async function register() {
       const username = authUsernameEl.value.trim();
       const password = authPasswordEl.value;
-      if (!username || password.length < 8) {
-        setAuthState('Username required, password must be at least 8 chars');
+      if (!validateAuthForm()) {
+        setAuthState('Please fix the highlighted fields', 'error');
         return;
       }
       const res = await fetch('/api/auth/register', {
@@ -265,17 +338,19 @@
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setAuthState(`Register failed: ${data.error || 'unknown error'}`);
+        setAuthState(`Register failed: ${data.error || 'unknown error'}`, 'error');
+        showToast('Register failed', 'error');
         return;
       }
-      setAuthState('Registered. Please login.');
+      setAuthState('Registered. Please login.', 'ok');
+      showToast('Registered successfully');
     }
 
     async function login() {
       const username = authUsernameEl.value.trim();
       const password = authPasswordEl.value;
-      if (!username || !password) {
-        setAuthState('Enter username and password');
+      if (!validateAuthForm()) {
+        setAuthState('Please fix the highlighted fields', 'error');
         return;
       }
       const res = await fetch('/api/auth/login', {
@@ -285,13 +360,16 @@
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.token) {
-        setAuthState(`Login failed: ${data.error || 'unknown error'}`);
+        setAuthState(`Login failed: ${data.error || 'unknown error'}`, 'error');
+        showToast('Login failed', 'error');
         return;
       }
       setAuthToken(data.token);
       const me = await fetchMe();
-      setAuthState(me ? `Logged in as ${me.username}` : 'Logged in');
+      setAuthState(me ? `Logged in as ${me.username}` : 'Logged in', 'ok');
+      showToast('Logged in');
       await loadPredictions();
+      await loadChallenges();
     }
 
     async function restoreAuth() {
@@ -304,16 +382,18 @@
       const me = await fetchMe();
       if (!me) {
         setAuthToken(null);
-        setAuthState('Session expired. Please login again.');
+        setAuthState('Session expired. Please login again.', 'error');
         return;
       }
-      setAuthState(`Logged in as ${me.username}`);
+      setAuthState(`Logged in as ${me.username}`, 'ok');
     }
 
     function logout() {
       setAuthToken(null);
       predictionsEl.innerHTML = '<li>Login to view predictions</li>';
       setAuthState('Logged out');
+      showToast('Logged out');
+      renderChallengeAdmin();
     }
 
     async function loadLeaderboard() {
@@ -322,16 +402,18 @@
     }
 
     async function loadChallenges() {
-      const ch = await fetch('/api/challenges').then(r => r.json());
+      const ch = await fetch('/api/challenges?includeInactive=1').then(r => r.json());
+      allChallenges = ch.challenges || [];
       challengeNameById.clear();
-      (ch.challenges || []).forEach((c) => challengeNameById.set(c.id, c.name));
-      challengesEl.innerHTML = (ch.challenges || []).filter(x => x.active).map(x => (
+      allChallenges.forEach((c) => challengeNameById.set(c.id, c.name));
+      challengesEl.innerHTML = allChallenges.filter(x => x.active).map(x => (
         `<li class="challenge"><span>${x.name}</span><button class="btn" data-cid="${x.id}">Predict</button></li>`
       )).join('') || '<li>No active challenges</li>';
       document.querySelectorAll('[data-cid]').forEach((btn) => {
         btn.addEventListener('click', async () => {
           if (!authToken) {
-            setAuthState('Login required to submit predictions');
+            setAuthState('Login required to submit predictions', 'error');
+            showToast('Login required', 'error');
             return;
           }
           const sandbox = compute(Number(sliderNews.value), Number(sliderSocial.value), Number(sliderVol.value));
@@ -344,7 +426,11 @@
               predictedLabel: sandbox.label
             })
           });
-          if (!res.ok) return;
+          if (!res.ok) {
+            const body = await res.json().catch(() => ({}));
+            showToast(body.error || 'Prediction failed', 'error');
+            return;
+          }
           await fetch('/api/events', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
@@ -352,8 +438,97 @@
           });
           btn.textContent = 'Submitted';
           btn.disabled = true;
+          showToast('Prediction submitted');
           await loadPredictions();
           await loadLeaderboard();
+        });
+      });
+      renderChallengeAdmin();
+    }
+
+    function renderChallengeAdmin() {
+      if (!authToken) {
+        challengeAdminStateEl.textContent = 'Login required';
+        challengeAdminListEl.innerHTML = '<li>Login to manage challenges</li>';
+        return;
+      }
+      challengeAdminStateEl.textContent = 'You can create, toggle, or delete challenges';
+      challengeAdminListEl.innerHTML = allChallenges.map((c) => (
+        `<li class="challenge">
+          <span>
+            <strong>${c.name}</strong> (${c.type}) - ${c.active ? 'active' : 'inactive'}
+            <input class="auth-input" style="margin-top:6px;" data-edit-name="${c.id}" value="${c.name}">
+            <input class="auth-input" style="margin-top:6px;" data-edit-type="${c.id}" value="${c.type}">
+          </span>
+          <span>
+            <button class="btn" data-save-cid="${c.id}">Save</button>
+            <button class="btn" data-toggle-cid="${c.id}" data-next="${c.active ? '0' : '1'}">${c.active ? 'Deactivate' : 'Activate'}</button>
+            <button class="btn" data-del-cid="${c.id}">Delete</button>
+          </span>
+        </li>`
+      )).join('') || '<li>No challenges</li>';
+
+      document.querySelectorAll('[data-save-cid]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const id = btn.dataset.saveCid;
+          const nameEl = document.querySelector(`[data-edit-name="${id}"]`);
+          const typeEl = document.querySelector(`[data-edit-type="${id}"]`);
+          const name = nameEl ? nameEl.value.trim() : '';
+          const type = typeEl ? typeEl.value.trim() : '';
+          if (!name || !type) {
+            showToast('Name and type required', 'error');
+            return;
+          }
+          const res = await fetch(`/api/challenges/${id}`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify({ name, type })
+          });
+          if (!res.ok) {
+            const body = await res.json().catch(() => ({}));
+            showToast(body.error || 'Update failed', 'error');
+            return;
+          }
+          showToast('Challenge updated');
+          await loadChallenges();
+        });
+      });
+      document.querySelectorAll('[data-toggle-cid]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const active = btn.dataset.next === '1';
+          const res = await fetch(`/api/challenges/${btn.dataset.toggleCid}`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify({ active })
+          });
+          if (!res.ok) {
+            const body = await res.json().catch(() => ({}));
+            showToast(body.error || 'Toggle failed', 'error');
+            return;
+          }
+          showToast(active ? 'Challenge activated' : 'Challenge deactivated');
+          await loadChallenges();
+        });
+      });
+      document.querySelectorAll('[data-del-cid]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const res = await fetch(`/api/challenges/${btn.dataset.delCid}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${authToken}` }
+          });
+          if (!res.ok) {
+            const body = await res.json().catch(() => ({}));
+            showToast(body.error || 'Delete failed', 'error');
+            return;
+          }
+          showToast('Challenge deleted');
+          await loadChallenges();
         });
       });
     }
@@ -408,19 +583,69 @@
     });
     document.getElementById('scorePending').addEventListener('click', async () => {
       if (!authToken) {
-        setAuthState('Login required to score predictions');
+        setAuthState('Login required to score predictions', 'error');
         return;
       }
       await fetch('/api/predictions/score', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${authToken}` }
       });
+      showToast('Pending predictions scored');
       await loadPredictions();
       await loadLeaderboard();
     });
     document.getElementById('registerBtn').addEventListener('click', register);
     document.getElementById('loginBtn').addEventListener('click', login);
     logoutBtn.addEventListener('click', logout);
+    authUsernameEl.addEventListener('input', () => {
+      paintFieldState(authUsernameEl, usernameErrEl, validateUsername(authUsernameEl.value.trim()));
+    });
+    authPasswordEl.addEventListener('input', () => {
+      paintFieldState(authPasswordEl, passwordErrEl, validatePassword(authPasswordEl.value));
+    });
+    authUsernameEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        login();
+      }
+    });
+    authPasswordEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        login();
+      }
+    });
+    createChallengeBtn.addEventListener('click', async () => {
+      if (!authToken) {
+        challengeAdminStateEl.textContent = 'Login required';
+        return;
+      }
+      const name = newChallengeNameEl.value.trim();
+      const type = newChallengeTypeEl.value.trim();
+      if (!name || !type) {
+        challengeAdminStateEl.textContent = 'Name and type are required';
+        return;
+      }
+      const res = await fetch('/api/challenges', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify({ name, type, active: true })
+      });
+      if (!res.ok) {
+        challengeAdminStateEl.textContent = 'Create failed';
+        const body = await res.json().catch(() => ({}));
+        showToast(body.error || 'Create failed', 'error');
+        return;
+      }
+      newChallengeNameEl.value = '';
+      newChallengeTypeEl.value = '';
+      challengeAdminStateEl.textContent = 'Challenge created';
+      showToast('Challenge created');
+      await loadChallenges();
+    });
 
     (async function boot() {
       await restoreAuth();

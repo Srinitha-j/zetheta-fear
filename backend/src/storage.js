@@ -76,6 +76,7 @@ function initializeStorage() {
       id TEXT PRIMARY KEY,
       created_at TEXT NOT NULL,
       username TEXT NOT NULL UNIQUE,
+      role TEXT NOT NULL DEFAULT 'member',
       password_salt TEXT NOT NULL,
       password_digest TEXT NOT NULL
     );
@@ -104,6 +105,9 @@ function initializeStorage() {
       points INTEGER,
       scored_at TEXT
     );
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_pending_prediction_unique
+    ON predictions(user_id, challenge_id)
+    WHERE status = 'pending';
   `);
 
   migrateJsonIfNeeded();
@@ -218,13 +222,16 @@ function getGameplayEvents(limit = 100) {
 function addUser(user) {
   const conn = getDb();
   const stmt = conn.prepare(`
-    INSERT INTO users (id, created_at, username, password_salt, password_digest)
-    VALUES (?, ?, ?, ?, ?)
+    INSERT INTO users (id, created_at, username, role, password_salt, password_digest)
+    VALUES (?, ?, ?, ?, ?, ?)
   `);
+  const currentUsers = Number(conn.prepare('SELECT COUNT(1) AS c FROM users').get().c);
+  const role = user.role ? String(user.role) : (currentUsers === 0 ? 'admin' : 'member');
   stmt.run(
     `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
     new Date().toISOString(),
     String(user.username),
+    role,
     String(user.passwordSalt),
     String(user.passwordDigest)
   );
@@ -233,7 +240,7 @@ function addUser(user) {
 function findUserByUsername(username) {
   const conn = getDb();
   const stmt = conn.prepare(`
-    SELECT id, created_at, username, password_salt, password_digest
+    SELECT id, created_at, username, role, password_salt, password_digest
     FROM users
     WHERE lower(username) = lower(?)
     LIMIT 1
@@ -244,6 +251,26 @@ function findUserByUsername(username) {
     id: row.id,
     createdAt: row.created_at,
     username: row.username,
+    role: row.role || 'member',
+    passwordSalt: row.password_salt,
+    passwordDigest: row.password_digest
+  };
+}
+
+function findUserById(id) {
+  const conn = getDb();
+  const row = conn.prepare(`
+    SELECT id, created_at, username, role, password_salt, password_digest
+    FROM users
+    WHERE id = ?
+    LIMIT 1
+  `).get(id);
+  if (!row) return null;
+  return {
+    id: row.id,
+    createdAt: row.created_at,
+    username: row.username,
+    role: row.role || 'member',
     passwordSalt: row.password_salt,
     passwordDigest: row.password_digest
   };
@@ -312,6 +339,27 @@ function updateChallenge(id, patch) {
   return true;
 }
 
+function getChallengeById(id) {
+  const conn = getDb();
+  const row = conn.prepare(`
+    SELECT id, created_at, updated_at, name, type, active, created_by_user_id, created_by_username
+    FROM challenges
+    WHERE id = ?
+    LIMIT 1
+  `).get(id);
+  if (!row) return null;
+  return {
+    id: row.id,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    name: row.name,
+    type: row.type,
+    active: Boolean(row.active),
+    createdByUserId: row.created_by_user_id,
+    createdByUsername: row.created_by_username
+  };
+}
+
 function deleteChallenge(id) {
   const conn = getDb();
   const res = conn.prepare('DELETE FROM challenges WHERE id = ?').run(id);
@@ -338,6 +386,17 @@ function createPrediction(prediction) {
     'pending'
   );
   return id;
+}
+
+function hasPendingPrediction(userId, challengeId) {
+  const conn = getDb();
+  const row = conn.prepare(`
+    SELECT id
+    FROM predictions
+    WHERE user_id = ? AND challenge_id = ? AND status = 'pending'
+    LIMIT 1
+  `).get(String(userId), String(challengeId));
+  return Boolean(row);
 }
 
 function listPredictionsByUser(userId, limit = 100) {
@@ -476,8 +535,8 @@ function migrateJsonIfNeeded() {
   if (counts.users === 0) {
     const users = readJsonArray(usersFile);
     const ins = conn.prepare(`
-      INSERT INTO users (id, created_at, username, password_salt, password_digest)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO users (id, created_at, username, role, password_salt, password_digest)
+      VALUES (?, ?, ?, ?, ?, ?)
     `);
     for (const u of users) {
       if (!u.username || !u.passwordSalt || !u.passwordDigest) continue;
@@ -485,6 +544,7 @@ function migrateJsonIfNeeded() {
         String(u.id || `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`),
         String(u.createdAt || new Date().toISOString()),
         String(u.username),
+        String(u.role || 'member'),
         String(u.passwordSalt),
         String(u.passwordDigest)
       );
@@ -500,11 +560,14 @@ module.exports = {
   getGameplayEvents,
   addUser,
   findUserByUsername,
+  findUserById,
   listChallenges,
+  getChallengeById,
   createChallenge,
   updateChallenge,
   deleteChallenge,
   createPrediction,
+  hasPendingPrediction,
   listPredictionsByUser,
   scorePendingPredictions,
   getLeaderboard,
