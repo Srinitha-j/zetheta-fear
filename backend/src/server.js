@@ -22,6 +22,7 @@ const {
   addUser,
   findUserByUsername,
   findUserById,
+  updateUserPassword,
   listChallenges,
   getChallengeById,
   createChallenge,
@@ -29,6 +30,13 @@ const {
   deleteChallenge,
   createPrediction,
   hasPendingPrediction,
+  addRefreshToken,
+  findActiveRefreshTokenByHash,
+  revokeRefreshTokenById,
+  revokeRefreshTokenFamily,
+  addPasswordResetToken,
+  findActivePasswordResetTokenByHash,
+  consumePasswordResetToken,
   listPredictionsByUser,
   scorePendingPredictions,
   getLeaderboard,
@@ -39,6 +47,28 @@ const port = Number(process.env.PORT || 8080);
 const wsInterval = Number(process.env.WS_INTERVAL_MS || 2000);
 const sentimentRefreshMs = Number(process.env.SENTIMENT_REFRESH_MS || 30000);
 const jwtSecret = process.env.JWT_SECRET || 'change_me';
+const authRateLimitWindowMs = Number(process.env.AUTH_RATE_LIMIT_WINDOW_MS || 60_000);
+const authRateLimitMax = Number(process.env.AUTH_RATE_LIMIT_MAX || 20);
+const loginFailThreshold = Number(process.env.LOGIN_FAIL_THRESHOLD || 5);
+const loginLockMs = Number(process.env.LOGIN_LOCK_MS || 300_000);
+const authRateLimitStore = new Map();
+const loginFailureStore = new Map();
+const enableDevAuthReset = String(process.env.ENABLE_DEV_AUTH_RESET || '1') === '1';
+const accessTokenTtlSeconds = Number(process.env.ACCESS_TOKEN_TTL_SECONDS || 15 * 60);
+const refreshTokenTtlSeconds = Number(process.env.REFRESH_TOKEN_TTL_SECONDS || 7 * 24 * 60 * 60);
+const passwordResetTtlSeconds = Number(process.env.PASSWORD_RESET_TTL_SECONDS || 30 * 60);
+const enableDevPasswordReset = String(process.env.ENABLE_DEV_PASSWORD_RESET || '1') === '1';
+
+function logAuthEvent(type, details = {}) {
+  const entry = {
+    at: new Date().toISOString(),
+    type,
+    ip: details.ip || 'unknown',
+    username: details.username || '',
+    reason: details.reason || ''
+  };
+  console.warn(`[auth] ${JSON.stringify(entry)}`);
+}
 
 const defaultChallenges = [
   { id: 'c1', name: 'Contrarian Call', type: 'contrarian', active: true },
@@ -162,7 +192,13 @@ async function refreshSentiment() {
 }
 
 function sendJson(res, code, payload) {
-  res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8' });
+  res.writeHead(code, {
+    'Content-Type': 'application/json; charset=utf-8',
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Referrer-Policy': 'no-referrer',
+    'Content-Security-Policy': "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' ws: wss: https:;"
+  });
   res.end(JSON.stringify(payload));
 }
 
@@ -175,8 +211,109 @@ function readAuthUser(req) {
   return { id: payload.sub, username: payload.username, role: payload.role || 'member' };
 }
 
+function getClientIp(req) {
+  const fwd = req.headers['x-forwarded-for'];
+  if (typeof fwd === 'string' && fwd.trim()) return fwd.split(',')[0].trim();
+  return req.socket && req.socket.remoteAddress ? req.socket.remoteAddress : 'unknown';
+}
+
+function enforceRateLimit(req, scope) {
+  const now = Date.now();
+  const key = `${scope}:${getClientIp(req)}`;
+  const entry = authRateLimitStore.get(key);
+  if (!entry || entry.resetAt <= now) {
+    authRateLimitStore.set(key, { count: 1, resetAt: now + authRateLimitWindowMs });
+    return { limited: false };
+  }
+  if (entry.count >= authRateLimitMax) {
+    return { limited: true, retryAfterSeconds: Math.max(1, Math.ceil((entry.resetAt - now) / 1000)) };
+  }
+  entry.count += 1;
+  return { limited: false };
+}
+
+function checkLoginLock(username) {
+  const key = String(username || '').toLowerCase();
+  const entry = loginFailureStore.get(key);
+  if (!entry || !entry.lockedUntil) return { locked: false };
+  if (Date.now() >= entry.lockedUntil) {
+    loginFailureStore.delete(key);
+    return { locked: false };
+  }
+  return { locked: true, retryAfterSeconds: Math.max(1, Math.ceil((entry.lockedUntil - Date.now()) / 1000)) };
+}
+
+function recordFailedLogin(username) {
+  const key = String(username || '').toLowerCase();
+  const now = Date.now();
+  const current = loginFailureStore.get(key) || { count: 0, lockedUntil: 0 };
+  current.count += 1;
+  if (current.count >= loginFailThreshold) {
+    current.count = 0;
+    current.lockedUntil = now + loginLockMs;
+  }
+  loginFailureStore.set(key, current);
+}
+
+function clearLoginFailures(username) {
+  const key = String(username || '').toLowerCase();
+  loginFailureStore.delete(key);
+}
+
+function clearRateLimitForIp(ip) {
+  const keys = [
+    `register:${ip}`,
+    `login:${ip}`
+  ];
+  for (const key of keys) authRateLimitStore.delete(key);
+}
+
 function canManageChallenge(authUser, challenge) {
   return Boolean(authUser && challenge && (authUser.role === 'admin' || challenge.createdByUserId === authUser.id));
+}
+
+function sha256(input) {
+  return crypto.createHash('sha256').update(String(input)).digest('hex');
+}
+
+function issueSessionTokens(user, familyId = null) {
+  const now = Math.floor(Date.now() / 1000);
+  const accessToken = signJwt({
+    sub: user.id,
+    username: user.username,
+    role: user.role || 'member',
+    iat: now,
+    exp: now + accessTokenTtlSeconds
+  }, jwtSecret);
+
+  const refreshRaw = crypto.randomBytes(48).toString('hex');
+  const tokenId = `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+  const resolvedFamilyId = familyId || `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+  addRefreshToken({
+    id: tokenId,
+    userId: user.id,
+    tokenHash: sha256(refreshRaw),
+    familyId: resolvedFamilyId,
+    issuedAt: new Date().toISOString(),
+    expiresAt: new Date(Date.now() + refreshTokenTtlSeconds * 1000).toISOString()
+  });
+  return {
+    accessToken,
+    refreshToken: refreshRaw,
+    expiresIn: accessTokenTtlSeconds,
+    refreshExpiresIn: refreshTokenTtlSeconds
+  };
+}
+
+function validatePasswordPolicy(password) {
+  if (typeof password !== 'string') return 'password is required';
+  if (password.length < 8) return 'password must be at least 8 chars';
+  if (password.length > 128) return 'password must be at most 128 chars';
+  if (!/[a-z]/.test(password)) return 'password must include a lowercase letter';
+  if (!/[A-Z]/.test(password)) return 'password must include an uppercase letter';
+  if (!/[0-9]/.test(password)) return 'password must include a number';
+  if (!/[^A-Za-z0-9]/.test(password)) return 'password must include a symbol';
+  return null;
 }
 
 function readJsonBody(req) {
@@ -201,7 +338,13 @@ function readJsonBody(req) {
 function serveFrontend(res) {
   const file = path.join(__dirname, '..', '..', 'frontend', 'index.html');
   const html = fs.readFileSync(file, 'utf8');
-  res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+  res.writeHead(200, {
+    'Content-Type': 'text/html; charset=utf-8',
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Referrer-Policy': 'no-referrer',
+    'Content-Security-Policy': "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' ws: wss: https:;"
+  });
   res.end(html);
 }
 
@@ -214,40 +357,158 @@ async function handleApi(req, res) {
   }
   if (url.pathname === '/api/auth/register' && req.method === 'POST') {
     try {
+      const limit = enforceRateLimit(req, 'register');
+      if (limit.limited) {
+        logAuthEvent('register_limited', { ip: getClientIp(req), reason: 'rate_limit' });
+        return sendJson(res, 429, { error: 'too many registration attempts', retryAfter: limit.retryAfterSeconds });
+      }
       const payload = await readJsonBody(req);
       const username = typeof payload.username === 'string' ? payload.username.trim() : '';
       const password = typeof payload.password === 'string' ? payload.password : '';
       if (!/^[a-zA-Z0-9_]{3,32}$/.test(username)) {
+        logAuthEvent('register_rejected', { ip: getClientIp(req), username, reason: 'invalid_username' });
         return sendJson(res, 400, { error: 'username must be 3-32 chars [a-zA-Z0-9_]' });
       }
-      if (password.length < 8) return sendJson(res, 400, { error: 'password must be at least 8 chars' });
-      if (findUserByUsername(username)) return sendJson(res, 409, { error: 'username already exists' });
+      const pwdPolicyErr = validatePasswordPolicy(password);
+      if (pwdPolicyErr) {
+        logAuthEvent('register_rejected', { ip: getClientIp(req), username, reason: 'short_password' });
+        return sendJson(res, 400, { error: pwdPolicyErr });
+      }
+      if (findUserByUsername(username)) {
+        logAuthEvent('register_rejected', { ip: getClientIp(req), username, reason: 'username_exists' });
+        return sendJson(res, 409, { error: 'username already exists' });
+      }
 
       const { salt, digest } = hashPassword(password);
       addUser({ username, passwordSalt: salt, passwordDigest: digest });
+      logAuthEvent('register_ok', { ip: getClientIp(req), username });
       return sendJson(res, 201, { ok: true });
     } catch (err) {
+      logAuthEvent('register_error', { ip: getClientIp(req), reason: err.message || 'bad_request' });
       return sendJson(res, 400, { error: err.message || 'Bad request' });
     }
   }
   if (url.pathname === '/api/auth/login' && req.method === 'POST') {
     try {
+      const limit = enforceRateLimit(req, 'login');
+      if (limit.limited) {
+        logAuthEvent('login_limited', { ip: getClientIp(req), reason: 'rate_limit' });
+        return sendJson(res, 429, { error: 'too many login attempts', retryAfter: limit.retryAfterSeconds });
+      }
       const payload = await readJsonBody(req);
       const username = typeof payload.username === 'string' ? payload.username.trim() : '';
       const password = typeof payload.password === 'string' ? payload.password : '';
+      const lock = checkLoginLock(username);
+      if (lock.locked) {
+        logAuthEvent('login_locked', { ip: getClientIp(req), username, reason: 'temporary_lockout' });
+        return sendJson(res, 429, { error: 'account temporarily locked due to failed logins', retryAfter: lock.retryAfterSeconds });
+      }
       const user = findUserByUsername(username);
       if (!user || !verifyPassword(password, user.passwordSalt, user.passwordDigest)) {
+        recordFailedLogin(username);
+        logAuthEvent('login_failed', { ip: getClientIp(req), username, reason: 'invalid_credentials' });
         return sendJson(res, 401, { error: 'invalid credentials' });
       }
-      const now = Math.floor(Date.now() / 1000);
-      const token = signJwt({
-        sub: user.id,
-        username: user.username,
-        role: user.role || 'member',
-        iat: now,
-        exp: now + 24 * 60 * 60
-      }, jwtSecret);
-      return sendJson(res, 200, { token, expiresIn: 24 * 60 * 60, user: { id: user.id, username: user.username, role: user.role || 'member' } });
+      clearLoginFailures(username);
+      logAuthEvent('login_ok', { ip: getClientIp(req), username });
+      const session = issueSessionTokens(user);
+      return sendJson(res, 200, {
+        token: session.accessToken,
+        accessToken: session.accessToken,
+        refreshToken: session.refreshToken,
+        expiresIn: session.expiresIn,
+        refreshExpiresIn: session.refreshExpiresIn,
+        user: { id: user.id, username: user.username, role: user.role || 'member' }
+      });
+    } catch (err) {
+      return sendJson(res, 400, { error: err.message || 'Bad request' });
+    }
+  }
+  if (url.pathname === '/api/auth/refresh' && req.method === 'POST') {
+    try {
+      const payload = await readJsonBody(req);
+      const refreshToken = typeof payload.refreshToken === 'string' ? payload.refreshToken.trim() : '';
+      if (!refreshToken) return sendJson(res, 400, { error: 'refreshToken is required' });
+      const tokenHash = sha256(refreshToken);
+      const stored = findActiveRefreshTokenByHash(tokenHash);
+      if (!stored) return sendJson(res, 401, { error: 'invalid or expired refresh token' });
+      revokeRefreshTokenById(stored.id);
+
+      const user = findUserById(stored.userId);
+      if (!user) {
+        revokeRefreshTokenFamily(stored.familyId);
+        return sendJson(res, 401, { error: 'invalid refresh session' });
+      }
+      const session = issueSessionTokens(user, stored.familyId);
+      return sendJson(res, 200, {
+        token: session.accessToken,
+        accessToken: session.accessToken,
+        refreshToken: session.refreshToken,
+        expiresIn: session.expiresIn,
+        refreshExpiresIn: session.refreshExpiresIn,
+        user: { id: user.id, username: user.username, role: user.role || 'member' }
+      });
+    } catch (err) {
+      return sendJson(res, 400, { error: err.message || 'Bad request' });
+    }
+  }
+  if (url.pathname === '/api/auth/logout' && req.method === 'POST') {
+    try {
+      const payload = await readJsonBody(req);
+      const refreshToken = typeof payload.refreshToken === 'string' ? payload.refreshToken.trim() : '';
+      if (!refreshToken) return sendJson(res, 400, { error: 'refreshToken is required' });
+      const stored = findActiveRefreshTokenByHash(sha256(refreshToken));
+      if (stored) revokeRefreshTokenFamily(stored.familyId);
+      return sendJson(res, 200, { ok: true });
+    } catch (err) {
+      return sendJson(res, 400, { error: err.message || 'Bad request' });
+    }
+  }
+  if (url.pathname === '/api/auth/password/forgot' && req.method === 'POST') {
+    try {
+      const payload = await readJsonBody(req);
+      const username = typeof payload.username === 'string' ? payload.username.trim() : '';
+      if (!username) return sendJson(res, 400, { error: 'username is required' });
+      const user = findUserByUsername(username);
+      if (!user) return sendJson(res, 200, { ok: true });
+
+      const rawToken = crypto.randomBytes(32).toString('hex');
+      addPasswordResetToken({
+        id: `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+        userId: user.id,
+        tokenHash: sha256(rawToken),
+        issuedAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + passwordResetTtlSeconds * 1000).toISOString()
+      });
+
+      // In production this would be delivered by email/SMS; response stays generic.
+      if (enableDevPasswordReset) {
+        return sendJson(res, 200, { ok: true, devResetToken: rawToken });
+      }
+      return sendJson(res, 200, { ok: true });
+    } catch (err) {
+      return sendJson(res, 400, { error: err.message || 'Bad request' });
+    }
+  }
+  if (url.pathname === '/api/auth/password/reset' && req.method === 'POST') {
+    try {
+      const payload = await readJsonBody(req);
+      const token = typeof payload.token === 'string' ? payload.token.trim() : '';
+      const newPassword = typeof payload.newPassword === 'string' ? payload.newPassword : '';
+      if (!token) return sendJson(res, 400, { error: 'token is required' });
+      const pwdPolicyErr = validatePasswordPolicy(newPassword);
+      if (pwdPolicyErr) return sendJson(res, 400, { error: pwdPolicyErr });
+
+      const stored = findActivePasswordResetTokenByHash(sha256(token));
+      if (!stored) return sendJson(res, 401, { error: 'invalid or expired reset token' });
+      const user = findUserById(stored.userId);
+      if (!user) return sendJson(res, 401, { error: 'invalid reset token subject' });
+
+      const { salt, digest } = hashPassword(newPassword);
+      const updated = updateUserPassword(user.id, salt, digest);
+      if (!updated) return sendJson(res, 500, { error: 'failed to update password' });
+      consumePasswordResetToken(stored.id);
+      return sendJson(res, 200, { ok: true });
     } catch (err) {
       return sendJson(res, 400, { error: err.message || 'Bad request' });
     }
@@ -260,6 +521,29 @@ async function handleApi(req, res) {
       return sendJson(res, 200, { user: fullUser ? { id: fullUser.id, username: fullUser.username, role: fullUser.role } : authUser });
     } catch (_err) {
       return sendJson(res, 401, { error: 'missing or invalid token' });
+    }
+  }
+  if (url.pathname === '/api/auth/config' && req.method === 'GET') {
+    return sendJson(res, 200, {
+      features: {
+        devAuthResetEnabled: enableDevAuthReset
+      }
+    });
+  }
+  if (url.pathname === '/api/auth/dev/reset-guards' && req.method === 'POST') {
+    if (!enableDevAuthReset) return sendJson(res, 404, { error: 'Not found' });
+    const authUser = readAuthUser(req);
+    if (!authUser || authUser.role !== 'admin') return sendJson(res, 403, { error: 'admin role required' });
+    try {
+      const payload = await readJsonBody(req);
+      const username = typeof payload.username === 'string' ? payload.username.trim() : '';
+      if (username) clearLoginFailures(username);
+      const ip = getClientIp(req);
+      clearRateLimitForIp(ip);
+      logAuthEvent('dev_reset_guards', { ip, username, reason: 'manual_admin_reset' });
+      return sendJson(res, 200, { ok: true, username: username || null, ip });
+    } catch (err) {
+      return sendJson(res, 400, { error: err.message || 'Bad request' });
     }
   }
   if (url.pathname === '/api/leaderboard' && req.method === 'GET') {

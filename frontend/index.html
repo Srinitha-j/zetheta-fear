@@ -135,6 +135,7 @@
         <div class="row" style="margin-top:10px;">
           <button id="registerBtn" class="btn">Register</button>
           <button id="loginBtn" class="btn">Login</button>
+          <button id="resetGuardsBtn" class="btn">Reset Login Guard</button>
         </div>
         <p id="authState" class="tiny">Not logged in</p>
       </article>
@@ -193,7 +194,10 @@
 
   <script>
     let authToken = null;
+    let refreshToken = null;
     let liveLatest = null;
+    let authRetryTimer = null;
+    let authConfig = { features: { devAuthResetEnabled: false } };
 
     const scoreEl = document.getElementById('score');
     const labelEl = document.getElementById('label');
@@ -222,6 +226,7 @@
     const challengeAdminStateEl = document.getElementById('challengeAdminState');
     const challengeAdminListEl = document.getElementById('challengeAdminList');
     const toastsEl = document.getElementById('toasts');
+    const resetGuardsBtn = document.getElementById('resetGuardsBtn');
     const challengeNameById = new Map();
     let allChallenges = [];
 
@@ -281,6 +286,28 @@
       if (type === 'ok') authStateEl.classList.add('auth-state-ok');
     }
 
+    function updateResetButtonVisibility(user) {
+      const isAdmin = Boolean(user && user.role === 'admin');
+      const enabled = Boolean(authConfig && authConfig.features && authConfig.features.devAuthResetEnabled);
+      resetGuardsBtn.style.display = enabled && isAdmin ? 'inline-block' : 'none';
+    }
+
+    function startRetryCountdown(prefix, seconds) {
+      if (authRetryTimer) clearInterval(authRetryTimer);
+      let remaining = Math.max(1, Number(seconds || 1));
+      setAuthState(`${prefix}. Try again in ${remaining}s`, 'error');
+      authRetryTimer = setInterval(() => {
+        remaining -= 1;
+        if (remaining <= 0) {
+          clearInterval(authRetryTimer);
+          authRetryTimer = null;
+          setAuthState('You can try again now');
+          return;
+        }
+        setAuthState(`${prefix}. Try again in ${remaining}s`, 'error');
+      }, 1000);
+    }
+
     function validateUsername(username) {
       if (!username) return 'Username is required';
       if (!/^[a-zA-Z0-9_]{3,32}$/.test(username)) return 'Use 3-32 chars: letters, numbers, underscore';
@@ -290,6 +317,11 @@
     function validatePassword(password) {
       if (!password) return 'Password is required';
       if (password.length < 8) return 'Password must be at least 8 chars';
+      if (password.length > 128) return 'Password must be at most 128 chars';
+      if (!/[a-z]/.test(password)) return 'Include a lowercase letter';
+      if (!/[A-Z]/.test(password)) return 'Include an uppercase letter';
+      if (!/[0-9]/.test(password)) return 'Include a number';
+      if (!/[^A-Za-z0-9]/.test(password)) return 'Include a symbol';
       return '';
     }
 
@@ -314,6 +346,44 @@
       else localStorage.removeItem('fg_token');
     }
 
+    function setRefreshToken(token) {
+      refreshToken = token || null;
+      if (refreshToken) localStorage.setItem('fg_refresh_token', refreshToken);
+      else localStorage.removeItem('fg_refresh_token');
+    }
+
+    async function refreshSession() {
+      if (!refreshToken) return false;
+      const res = await fetch('/api/auth/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken })
+      });
+      if (!res.ok) {
+        setAuthToken(null);
+        setRefreshToken(null);
+        return false;
+      }
+      const data = await res.json().catch(() => ({}));
+      if (!data.accessToken || !data.refreshToken) return false;
+      setAuthToken(data.accessToken);
+      setRefreshToken(data.refreshToken);
+      return true;
+    }
+
+    async function apiFetch(path, options = {}, authRequired = false) {
+      const headers = { ...(options.headers || {}) };
+      if (authToken) headers.Authorization = `Bearer ${authToken}`;
+      let res = await fetch(path, { ...options, headers });
+      if (authRequired && res.status === 401) {
+        const refreshed = await refreshSession();
+        if (!refreshed) return res;
+        const retryHeaders = { ...(options.headers || {}), Authorization: `Bearer ${authToken}` };
+        res = await fetch(path, { ...options, headers: retryHeaders });
+      }
+      return res;
+    }
+
     async function fetchMe() {
       if (!authToken) return null;
       const meRes = await fetch('/api/auth/me', {
@@ -322,6 +392,13 @@
       if (!meRes.ok) return null;
       const me = await meRes.json();
       return me && me.user ? me.user : null;
+    }
+
+    async function fetchAuthConfig() {
+      const res = await fetch('/api/auth/config');
+      if (!res.ok) return;
+      const data = await res.json().catch(() => null);
+      if (data && data.features) authConfig = data;
     }
 
     async function register() {
@@ -338,7 +415,11 @@
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setAuthState(`Register failed: ${data.error || 'unknown error'}`, 'error');
+        if (res.status === 429 && data.retryAfter) {
+          startRetryCountdown('Register blocked', data.retryAfter);
+        } else {
+          setAuthState(`Register failed: ${data.error || 'unknown error'}`, 'error');
+        }
         showToast('Register failed', 'error');
         return;
       }
@@ -360,13 +441,19 @@
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.token) {
-        setAuthState(`Login failed: ${data.error || 'unknown error'}`, 'error');
+        if (res.status === 429 && data.retryAfter) {
+          startRetryCountdown('Login blocked', data.retryAfter);
+        } else {
+          setAuthState(`Login failed: ${data.error || 'unknown error'}`, 'error');
+        }
         showToast('Login failed', 'error');
         return;
       }
       setAuthToken(data.token);
+      setRefreshToken(data.refreshToken || null);
       const me = await fetchMe();
       setAuthState(me ? `Logged in as ${me.username}` : 'Logged in', 'ok');
+      updateResetButtonVisibility(me);
       showToast('Logged in');
       await loadPredictions();
       await loadChallenges();
@@ -374,24 +461,47 @@
 
     async function restoreAuth() {
       const saved = localStorage.getItem('fg_token');
+      const savedRefresh = localStorage.getItem('fg_refresh_token');
+      setRefreshToken(savedRefresh || null);
       if (!saved) {
         setAuthState('Not logged in');
         return;
       }
       setAuthToken(saved);
-      const me = await fetchMe();
+      let me = await fetchMe();
       if (!me) {
-        setAuthToken(null);
+        const refreshed = await refreshSession();
+        if (!refreshed) {
+          setAuthToken(null);
+          setRefreshToken(null);
+          setAuthState('Session expired. Please login again.', 'error');
+          updateResetButtonVisibility(null);
+          return;
+        }
+        me = await fetchMe();
+      }
+      if (!me) {
         setAuthState('Session expired. Please login again.', 'error');
+        updateResetButtonVisibility(null);
         return;
       }
       setAuthState(`Logged in as ${me.username}`, 'ok');
+      updateResetButtonVisibility(me);
     }
 
     function logout() {
+      if (refreshToken) {
+        fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken })
+        }).catch(() => null);
+      }
       setAuthToken(null);
+      setRefreshToken(null);
       predictionsEl.innerHTML = '<li>Login to view predictions</li>';
       setAuthState('Logged out');
+      updateResetButtonVisibility(null);
       showToast('Logged out');
       renderChallengeAdmin();
     }
@@ -538,9 +648,12 @@
         predictionsEl.innerHTML = '<li>Login to view predictions</li>';
         return;
       }
-      const data = await fetch('/api/predictions?limit=10', {
-        headers: { 'Authorization': `Bearer ${authToken}` }
-      }).then(r => r.json());
+      const res = await apiFetch('/api/predictions?limit=10', {}, true);
+      if (!res.ok) {
+        predictionsEl.innerHTML = '<li>Session expired. Login again</li>';
+        return;
+      }
+      const data = await res.json();
       predictionsEl.innerHTML = (data.predictions || []).map((p) => {
         const status = p.status === 'scored' ? `scored (${p.points} pts)` : 'pending';
         const challengeName = challengeNameById.get(p.challengeId) || p.challengeId;
@@ -586,10 +699,7 @@
         setAuthState('Login required to score predictions', 'error');
         return;
       }
-      await fetch('/api/predictions/score', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${authToken}` }
-      });
+      await apiFetch('/api/predictions/score', { method: 'POST' }, true);
       showToast('Pending predictions scored');
       await loadPredictions();
       await loadLeaderboard();
@@ -615,6 +725,29 @@
         login();
       }
     });
+    resetGuardsBtn.addEventListener('click', async () => {
+      if (!authToken) {
+        setAuthState('Login as admin to reset guards', 'error');
+        showToast('Admin login required', 'error');
+        return;
+      }
+      const username = authUsernameEl.value.trim();
+      const res = await apiFetch('/api/auth/dev/reset-guards', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ username })
+      }, true);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setAuthState(data.error || 'Reset failed', 'error');
+        showToast(data.error || 'Reset failed', 'error');
+        return;
+      }
+      setAuthState('Login guards reset for current IP', 'ok');
+      showToast('Login guards reset');
+    });
     createChallengeBtn.addEventListener('click', async () => {
       if (!authToken) {
         challengeAdminStateEl.textContent = 'Login required';
@@ -626,14 +759,13 @@
         challengeAdminStateEl.textContent = 'Name and type are required';
         return;
       }
-      const res = await fetch('/api/challenges', {
+      const res = await apiFetch('/api/challenges', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ name, type, active: true })
-      });
+      }, true);
       if (!res.ok) {
         challengeAdminStateEl.textContent = 'Create failed';
         const body = await res.json().catch(() => ({}));
@@ -648,6 +780,7 @@
     });
 
     (async function boot() {
+      await fetchAuthConfig();
       await restoreAuth();
       await loadLeaderboard();
       await loadChallenges();

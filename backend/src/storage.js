@@ -105,6 +105,26 @@ function initializeStorage() {
       points INTEGER,
       scored_at TEXT
     );
+    CREATE TABLE IF NOT EXISTS refresh_tokens (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      token_hash TEXT NOT NULL UNIQUE,
+      family_id TEXT NOT NULL,
+      issued_at TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      revoked_at TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id ON refresh_tokens(user_id);
+    CREATE INDEX IF NOT EXISTS idx_refresh_tokens_family_id ON refresh_tokens(family_id);
+    CREATE TABLE IF NOT EXISTS password_reset_tokens (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      token_hash TEXT NOT NULL UNIQUE,
+      issued_at TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      consumed_at TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_user_id ON password_reset_tokens(user_id);
     CREATE UNIQUE INDEX IF NOT EXISTS idx_pending_prediction_unique
     ON predictions(user_id, challenge_id)
     WHERE status = 'pending';
@@ -276,6 +296,16 @@ function findUserById(id) {
   };
 }
 
+function updateUserPassword(userId, passwordSalt, passwordDigest) {
+  const conn = getDb();
+  const res = conn.prepare(`
+    UPDATE users
+    SET password_salt = ?, password_digest = ?
+    WHERE id = ?
+  `).run(String(passwordSalt), String(passwordDigest), String(userId));
+  return Number(res.changes || 0) > 0;
+}
+
 function listChallenges(activeOnly = false) {
   const conn = getDb();
   const sql = activeOnly
@@ -397,6 +427,105 @@ function hasPendingPrediction(userId, challengeId) {
     LIMIT 1
   `).get(String(userId), String(challengeId));
   return Boolean(row);
+}
+
+function addRefreshToken(entry) {
+  const conn = getDb();
+  conn.prepare(`
+    INSERT INTO refresh_tokens (id, user_id, token_hash, family_id, issued_at, expires_at, revoked_at)
+    VALUES (?, ?, ?, ?, ?, ?, NULL)
+  `).run(
+    String(entry.id),
+    String(entry.userId),
+    String(entry.tokenHash),
+    String(entry.familyId),
+    String(entry.issuedAt),
+    String(entry.expiresAt)
+  );
+}
+
+function findActiveRefreshTokenByHash(tokenHash) {
+  const conn = getDb();
+  const row = conn.prepare(`
+    SELECT id, user_id, token_hash, family_id, issued_at, expires_at, revoked_at
+    FROM refresh_tokens
+    WHERE token_hash = ?
+    LIMIT 1
+  `).get(String(tokenHash));
+  if (!row) return null;
+  if (row.revoked_at) return null;
+  if (Date.parse(row.expires_at) <= Date.now()) return null;
+  return {
+    id: row.id,
+    userId: row.user_id,
+    tokenHash: row.token_hash,
+    familyId: row.family_id,
+    issuedAt: row.issued_at,
+    expiresAt: row.expires_at,
+    revokedAt: row.revoked_at
+  };
+}
+
+function revokeRefreshTokenById(id) {
+  const conn = getDb();
+  conn.prepare(`
+    UPDATE refresh_tokens
+    SET revoked_at = ?
+    WHERE id = ? AND revoked_at IS NULL
+  `).run(new Date().toISOString(), String(id));
+}
+
+function revokeRefreshTokenFamily(familyId) {
+  const conn = getDb();
+  conn.prepare(`
+    UPDATE refresh_tokens
+    SET revoked_at = ?
+    WHERE family_id = ? AND revoked_at IS NULL
+  `).run(new Date().toISOString(), String(familyId));
+}
+
+function addPasswordResetToken(entry) {
+  const conn = getDb();
+  conn.prepare(`
+    INSERT INTO password_reset_tokens (id, user_id, token_hash, issued_at, expires_at, consumed_at)
+    VALUES (?, ?, ?, ?, ?, NULL)
+  `).run(
+    String(entry.id),
+    String(entry.userId),
+    String(entry.tokenHash),
+    String(entry.issuedAt),
+    String(entry.expiresAt)
+  );
+}
+
+function findActivePasswordResetTokenByHash(tokenHash) {
+  const conn = getDb();
+  const row = conn.prepare(`
+    SELECT id, user_id, token_hash, issued_at, expires_at, consumed_at
+    FROM password_reset_tokens
+    WHERE token_hash = ?
+    LIMIT 1
+  `).get(String(tokenHash));
+  if (!row) return null;
+  if (row.consumed_at) return null;
+  if (Date.parse(row.expires_at) <= Date.now()) return null;
+  return {
+    id: row.id,
+    userId: row.user_id,
+    tokenHash: row.token_hash,
+    issuedAt: row.issued_at,
+    expiresAt: row.expires_at
+  };
+}
+
+function consumePasswordResetToken(id) {
+  const conn = getDb();
+  const res = conn.prepare(`
+    UPDATE password_reset_tokens
+    SET consumed_at = ?
+    WHERE id = ? AND consumed_at IS NULL
+  `).run(new Date().toISOString(), String(id));
+  return Number(res.changes || 0) > 0;
 }
 
 function listPredictionsByUser(userId, limit = 100) {
@@ -561,6 +690,7 @@ module.exports = {
   addUser,
   findUserByUsername,
   findUserById,
+  updateUserPassword,
   listChallenges,
   getChallengeById,
   createChallenge,
@@ -568,6 +698,13 @@ module.exports = {
   deleteChallenge,
   createPrediction,
   hasPendingPrediction,
+  addRefreshToken,
+  findActiveRefreshTokenByHash,
+  revokeRefreshTokenById,
+  revokeRefreshTokenFamily,
+  addPasswordResetToken,
+  findActivePasswordResetTokenByHash,
+  consumePasswordResetToken,
   listPredictionsByUser,
   scorePendingPredictions,
   getLeaderboard,

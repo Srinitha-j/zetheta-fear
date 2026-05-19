@@ -5,6 +5,7 @@ Base URL: `http://localhost:8080`
 Auth:
 - Protected endpoints require header: `Authorization: Bearer <jwt>`
 - Obtain JWT via `POST /api/auth/login`
+- Auth endpoints are protected by IP rate limits and temporary lockout on repeated failed logins
 
 ## Health
 
@@ -36,11 +37,19 @@ Request body:
 
 Rules:
 - `username`: 3-32 chars, `[a-zA-Z0-9_]`
-- `password`: min 8 chars
+- `password`: 8-128 chars and must include lowercase, uppercase, number, symbol
 
 Response `201`:
 ```json
 { "ok": true }
+```
+
+Rate limit response `429`:
+```json
+{
+  "error": "too many registration attempts",
+  "retryAfter": 42
+}
 ```
 
 ### `POST /api/auth/login`
@@ -57,12 +66,24 @@ Request body:
 Response `200`:
 ```json
 {
-  "token": "<jwt>",
-  "expiresIn": 86400,
+  "token": "<access_jwt>",
+  "accessToken": "<access_jwt>",
+  "refreshToken": "<refresh_token>",
+  "expiresIn": 900,
+  "refreshExpiresIn": 604800,
   "user": {
     "id": "1730000000000-ab12cd",
-    "username": "player1"
+    "username": "player1",
+    "role": "member"
   }
+}
+```
+
+Lockout/rate-limit response `429`:
+```json
+{
+  "error": "account temporarily locked due to failed logins",
+  "retryAfter": 58
 }
 ```
 
@@ -76,6 +97,47 @@ Response `200`:
     "id": "1730000000000-ab12cd",
     "username": "player1"
   }
+}
+```
+
+### `POST /api/auth/refresh`
+Rotate refresh token and issue a new access token pair.
+
+Request body:
+```json
+{
+  "refreshToken": "<refresh_token>"
+}
+```
+
+### `POST /api/auth/logout`
+Revoke refresh-token family.
+
+Request body:
+```json
+{
+  "refreshToken": "<refresh_token>"
+}
+```
+
+### `POST /api/auth/password/forgot`
+Password reset request scaffold.
+
+Request body:
+```json
+{
+  "username": "player1"
+}
+```
+
+### `POST /api/auth/password/reset`
+Reset password using token from forgot flow.
+
+Request body:
+```json
+{
+  "token": "<reset_token>",
+  "newPassword": "Newpass#123"
 }
 ```
 
@@ -220,3 +282,15 @@ Errors:
 - `403` role/permission denied
 - `409` duplicate pending prediction for same user/challenge
 - `404` resource or route not found
+- `429` rate limited or temporary lockout (`retryAfter` in seconds)
+
+## Security/Runtime Env
+
+- `AUTH_RATE_LIMIT_WINDOW_MS` (default `60000`)
+- `AUTH_RATE_LIMIT_MAX` (default `20`)
+- `LOGIN_FAIL_THRESHOLD` (default `5`)
+- `LOGIN_LOCK_MS` (default `300000`)
+- `ACCESS_TOKEN_TTL_SECONDS` (default `900`)
+- `REFRESH_TOKEN_TTL_SECONDS` (default `604800`)
+- `PASSWORD_RESET_TTL_SECONDS` (default `1800`)
+- `ENABLE_DEV_PASSWORD_RESET` (default `1`)
