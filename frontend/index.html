@@ -137,6 +137,14 @@
           <button id="loginBtn" class="btn">Login</button>
           <button id="resetGuardsBtn" class="btn">Reset Login Guard</button>
         </div>
+        <div class="row" style="margin-top:10px;">
+          <button id="forgotBtn" class="btn">Forgot Password</button>
+          <button id="resetPwdBtn" class="btn">Reset Password</button>
+        </div>
+        <div class="sliders">
+          <label>Reset Token<input id="resetTokenInput" class="auth-input" type="text" placeholder="paste reset token"></label>
+          <label>New Password<input id="newPasswordInput" class="auth-input" type="password" placeholder="Newpass#123"></label>
+        </div>
         <p id="authState" class="tiny">Not logged in</p>
       </article>
 
@@ -227,6 +235,10 @@
     const challengeAdminListEl = document.getElementById('challengeAdminList');
     const toastsEl = document.getElementById('toasts');
     const resetGuardsBtn = document.getElementById('resetGuardsBtn');
+    const forgotBtn = document.getElementById('forgotBtn');
+    const resetPwdBtn = document.getElementById('resetPwdBtn');
+    const resetTokenInput = document.getElementById('resetTokenInput');
+    const newPasswordInput = document.getElementById('newPasswordInput');
     const challengeNameById = new Map();
     let allChallenges = [];
 
@@ -427,6 +439,62 @@
       showToast('Registered successfully');
     }
 
+    async function forgotPassword() {
+      const username = authUsernameEl.value.trim();
+      if (!username) {
+        setAuthState('Enter username for reset', 'error');
+        return;
+      }
+      const res = await fetch('/api/auth/password/forgot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setAuthState(data.error || 'Forgot password failed', 'error');
+        showToast(data.error || 'Forgot password failed', 'error');
+        return;
+      }
+      if (data.devResetToken) {
+        resetTokenInput.value = data.devResetToken;
+        setAuthState('Dev reset token generated and filled', 'ok');
+      } else {
+        setAuthState('If username exists, reset instructions were issued', 'ok');
+      }
+      showToast('Password reset request accepted');
+    }
+
+    async function resetPassword() {
+      const token = resetTokenInput.value.trim();
+      const newPassword = newPasswordInput.value;
+      const passErr = validatePassword(newPassword);
+      if (!token) {
+        setAuthState('Reset token is required', 'error');
+        return;
+      }
+      if (passErr) {
+        setAuthState(passErr, 'error');
+        return;
+      }
+      const res = await fetch('/api/auth/password/reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, newPassword })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setAuthState(data.error || 'Password reset failed', 'error');
+        showToast(data.error || 'Password reset failed', 'error');
+        return;
+      }
+      resetTokenInput.value = '';
+      newPasswordInput.value = '';
+      authPasswordEl.value = '';
+      setAuthState('Password reset successful. Login with new password', 'ok');
+      showToast('Password reset successful');
+    }
+
     async function login() {
       const username = authUsernameEl.value.trim();
       const password = authPasswordEl.value;
@@ -527,25 +595,25 @@
             return;
           }
           const sandbox = compute(Number(sliderNews.value), Number(sliderSocial.value), Number(sliderVol.value));
-          const res = await fetch('/api/predictions', {
+          const res = await apiFetch('/api/predictions', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               challengeId: btn.dataset.cid,
               predictedScore: sandbox.score,
               predictedLabel: sandbox.label
             })
-          });
+          }, true);
           if (!res.ok) {
             const body = await res.json().catch(() => ({}));
             showToast(body.error || 'Prediction failed', 'error');
             return;
           }
-          await fetch('/api/events', {
+          await apiFetch('/api/events', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ type: 'prediction_submitted', challengeId: btn.dataset.cid, metadata: { source: 'ui', score: sandbox.score, label: sandbox.label } })
-          });
+          }, true);
           btn.textContent = 'Submitted';
           btn.disabled = true;
           showToast('Prediction submitted');
@@ -589,14 +657,13 @@
             showToast('Name and type required', 'error');
             return;
           }
-          const res = await fetch(`/api/challenges/${id}`, {
+          const res = await apiFetch(`/api/challenges/${id}`, {
             method: 'PATCH',
             headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${authToken}`
+              'Content-Type': 'application/json'
             },
             body: JSON.stringify({ name, type })
-          });
+          }, true);
           if (!res.ok) {
             const body = await res.json().catch(() => ({}));
             showToast(body.error || 'Update failed', 'error');
@@ -609,14 +676,13 @@
       document.querySelectorAll('[data-toggle-cid]').forEach((btn) => {
         btn.addEventListener('click', async () => {
           const active = btn.dataset.next === '1';
-          const res = await fetch(`/api/challenges/${btn.dataset.toggleCid}`, {
+          const res = await apiFetch(`/api/challenges/${btn.dataset.toggleCid}`, {
             method: 'PATCH',
             headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${authToken}`
+              'Content-Type': 'application/json'
             },
             body: JSON.stringify({ active })
-          });
+          }, true);
           if (!res.ok) {
             const body = await res.json().catch(() => ({}));
             showToast(body.error || 'Toggle failed', 'error');
@@ -628,10 +694,10 @@
       });
       document.querySelectorAll('[data-del-cid]').forEach((btn) => {
         btn.addEventListener('click', async () => {
-          const res = await fetch(`/api/challenges/${btn.dataset.delCid}`, {
+          const res = await apiFetch(`/api/challenges/${btn.dataset.delCid}`, {
             method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${authToken}` }
-          });
+            headers: {}
+          }, true);
           if (!res.ok) {
             const body = await res.json().catch(() => ({}));
             showToast(body.error || 'Delete failed', 'error');
@@ -706,6 +772,8 @@
     });
     document.getElementById('registerBtn').addEventListener('click', register);
     document.getElementById('loginBtn').addEventListener('click', login);
+    forgotBtn.addEventListener('click', forgotPassword);
+    resetPwdBtn.addEventListener('click', resetPassword);
     logoutBtn.addEventListener('click', logout);
     authUsernameEl.addEventListener('input', () => {
       paintFieldState(authUsernameEl, usernameErrEl, validateUsername(authUsernameEl.value.trim()));
