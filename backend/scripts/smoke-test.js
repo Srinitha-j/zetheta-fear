@@ -30,7 +30,7 @@ async function waitForHealth(timeoutMs = 15000) {
 
 async function run() {
   const username = `smoke_user_${Date.now()}`;
-  const password = 'strongpass123';
+  const password = 'Strongpass123!';
 
   await expectStatus('/api/health', 200);
   await expectStatus('/api/leaderboard', 200);

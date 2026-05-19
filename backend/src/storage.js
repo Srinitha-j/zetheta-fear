@@ -45,6 +45,14 @@ function getDb() {
   return db;
 }
 
+function addColumnIfMissing(conn, tableName, columnName, definition) {
+  const columns = conn.prepare(`PRAGMA table_info(${tableName})`).all();
+  const hasColumn = columns.some((col) => col && col.name === columnName);
+  if (!hasColumn) {
+    conn.exec(`ALTER TABLE ${tableName} ADD COLUMN ${definition};`);
+  }
+}
+
 function initializeStorage() {
   ensureDataDir();
   const dbPath = getDbPathFromEnv();
@@ -129,6 +137,9 @@ function initializeStorage() {
     ON predictions(user_id, challenge_id)
     WHERE status = 'pending';
   `);
+
+  // Backward-compatible schema patch for local DBs created before role-based auth.
+  addColumnIfMissing(db, 'users', 'role', "role TEXT NOT NULL DEFAULT 'member'");
 
   migrateJsonIfNeeded();
 }

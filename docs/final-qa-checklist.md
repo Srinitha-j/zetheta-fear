@@ -3,33 +3,33 @@
 ## Security
 - [ ] Private repository confirmed
 - [ ] No secrets in git history
-- [ ] `.env` not committed
-- [ ] Auth rate limiting active
-- [ ] Login lockout active
-- [ ] Challenge admin/owner permissions enforced
+- [x] `.env` not committed
+- [x] Auth rate limiting active
+- [x] Login lockout active
+- [x] Challenge admin/owner permissions enforced
 
 ## Auth & Session
-- [ ] Register/login works with strong password policy
-- [ ] Access token refresh works
-- [ ] Logout revokes refresh family
-- [ ] Password reset flow works (dev scaffold)
+- [x] Register/login works with strong password policy
+- [x] Access token refresh works
+- [x] Logout revokes refresh family
+- [x] Password reset flow works (dev scaffold)
 
 ## Core Product
-- [ ] Sentiment latest endpoint works
-- [ ] Sentiment history endpoint works
-- [ ] Challenge CRUD works
-- [ ] Prediction submission/scoring works
-- [ ] Leaderboard updates from scored predictions
+- [x] Sentiment latest endpoint works
+- [x] Sentiment history endpoint works
+- [x] Challenge CRUD works
+- [x] Prediction submission/scoring works
+- [x] Leaderboard updates from scored predictions
 - [ ] WebSocket stream publishes sentiment updates
 
 ## Reliability
-- [ ] `npm test` passes
-- [ ] `npm run test:coverage` passes
-- [ ] Coverage >= 70%
+- [x] `npm test` passes
+- [x] `npm run test:coverage` passes
+- [x] Coverage >= 70%
 
 ## Documentation & Handover
-- [ ] API reference updated
-- [ ] Architecture doc updated
-- [ ] Deployment/rollback runbook complete
-- [ ] DB migration plan documented
+- [x] API reference updated
+- [x] Architecture doc updated
+- [x] Deployment/rollback runbook complete
+- [x] DB migration plan documented
 - [ ] Day 15 handover items complete
