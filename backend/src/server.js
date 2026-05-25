@@ -197,7 +197,7 @@ function sendJson(res, code, payload) {
     'X-Content-Type-Options': 'nosniff',
     'X-Frame-Options': 'DENY',
     'Referrer-Policy': 'no-referrer',
-    'Content-Security-Policy': "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' ws: wss: https:;"
+    'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' ws: wss: https:;"
   });
   res.end(JSON.stringify(payload));
 }
@@ -336,16 +336,34 @@ function readJsonBody(req) {
 }
 
 function serveFrontend(res) {
-  const file = path.join(__dirname, '..', '..', 'frontend', 'index.html');
+  return serveHtmlFile(res, 'index.html');
+}
+
+function serveLogin(res) {
+  return serveHtmlFile(res, 'login.html');
+}
+
+function serveHtmlFile(res, filename) {
+  const file = path.join(__dirname, '..', '..', 'frontend', filename);
   const html = fs.readFileSync(file, 'utf8');
   res.writeHead(200, {
     'Content-Type': 'text/html; charset=utf-8',
     'X-Content-Type-Options': 'nosniff',
     'X-Frame-Options': 'DENY',
     'Referrer-Policy': 'no-referrer',
-    'Content-Security-Policy': "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' ws: wss: https:;"
+    'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' ws: wss: https:;"
   });
   res.end(html);
+}
+
+function ensureDemoUser() {
+  const enableDemoUser = String(process.env.ENABLE_DEMO_USER || '0') === '1';
+  if (!enableDemoUser) return;
+  const demoUsername = process.env.DEMO_USERNAME || 'demo_admin';
+  const demoPassword = process.env.DEMO_PASSWORD || 'Newpass#123';
+  if (findUserByUsername(demoUsername)) return;
+  const { salt, digest } = hashPassword(demoPassword);
+  addUser({ username: demoUsername, passwordSalt: salt, passwordDigest: digest });
 }
 
 async function handleApi(req, res) {
@@ -705,7 +723,8 @@ const server = http.createServer((req, res) => {
     });
     return;
   }
-  if (req.url === '/' || req.url === '/index.html') return serveFrontend(res);
+  if (req.url === '/' || req.url === '/login' || req.url === '/login.html') return serveLogin(res);
+  if (req.url === '/app' || req.url === '/index.html') return serveFrontend(res);
   sendJson(res, 404, { error: 'Not found' });
 });
 
@@ -740,6 +759,7 @@ setInterval(() => {
 
 initializeStorage();
 seedChallengesIfEmpty(defaultChallenges);
+ensureDemoUser();
 addSentimentSnapshot({ ...latestSentiment, source: latestSource, sourceError: latestError });
 refreshSentiment();
 setInterval(refreshSentiment, sentimentRefreshMs);

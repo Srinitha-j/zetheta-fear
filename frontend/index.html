@@ -207,6 +207,25 @@
     let authRetryTimer = null;
     let authConfig = { features: { devAuthResetEnabled: false } };
 
+    function readCookie(name) {
+      const prefix = `${name}=`;
+      const row = document.cookie.split(';').map((x) => x.trim()).find((x) => x.startsWith(prefix));
+      if (!row) return null;
+      try {
+        return decodeURIComponent(row.slice(prefix.length));
+      } catch (_err) {
+        return null;
+      }
+    }
+
+    function setCookie(name, value) {
+      document.cookie = `${name}=${encodeURIComponent(value)}; path=/; SameSite=Lax`;
+    }
+
+    function clearCookie(name) {
+      document.cookie = `${name}=; Max-Age=0; path=/; SameSite=Lax`;
+    }
+
     const scoreEl = document.getElementById('score');
     const labelEl = document.getElementById('label');
     const signalEl = document.getElementById('signal');
@@ -297,6 +316,9 @@
       if (type === 'error') authStateEl.classList.add('auth-state-error');
       if (type === 'ok') authStateEl.classList.add('auth-state-ok');
     }
+    function updateAuthUi() {
+      logoutBtn.style.display = authToken ? 'inline-block' : 'none';
+    }
 
     function updateResetButtonVisibility(user) {
       const isAdmin = Boolean(user && user.role === 'admin');
@@ -354,14 +376,23 @@
 
     function setAuthToken(token) {
       authToken = token || null;
-      if (authToken) localStorage.setItem('fg_token', authToken);
-      else localStorage.removeItem('fg_token');
+      try {
+        if (authToken) localStorage.setItem('fg_token', authToken);
+        else localStorage.removeItem('fg_token');
+      } catch (_err) {}
+      if (authToken) setCookie('fg_token', authToken);
+      else clearCookie('fg_token');
+      updateAuthUi();
     }
 
     function setRefreshToken(token) {
       refreshToken = token || null;
-      if (refreshToken) localStorage.setItem('fg_refresh_token', refreshToken);
-      else localStorage.removeItem('fg_refresh_token');
+      try {
+        if (refreshToken) localStorage.setItem('fg_refresh_token', refreshToken);
+        else localStorage.removeItem('fg_refresh_token');
+      } catch (_err) {}
+      if (refreshToken) setCookie('fg_refresh_token', refreshToken);
+      else clearCookie('fg_refresh_token');
     }
 
     async function refreshSession() {
@@ -528,8 +559,14 @@
     }
 
     async function restoreAuth() {
-      const saved = localStorage.getItem('fg_token');
-      const savedRefresh = localStorage.getItem('fg_refresh_token');
+      let saved = null;
+      let savedRefresh = null;
+      try {
+        saved = localStorage.getItem('fg_token');
+        savedRefresh = localStorage.getItem('fg_refresh_token');
+      } catch (_err) {}
+      if (!saved) saved = readCookie('fg_token');
+      if (!savedRefresh) savedRefresh = readCookie('fg_refresh_token');
       setRefreshToken(savedRefresh || null);
       if (!saved) {
         setAuthState('Not logged in');
@@ -572,6 +609,7 @@
       updateResetButtonVisibility(null);
       showToast('Logged out');
       renderChallengeAdmin();
+      location.href = '/login';
     }
 
     async function loadLeaderboard() {
@@ -728,12 +766,16 @@
     }
 
     async function loadInitial() {
-      const s = await fetch('/api/sentiment/latest').then(r => r.json());
+      const res = await fetch('/api/sentiment/latest');
+      if (!res.ok) throw new Error('sentiment endpoint unavailable');
+      const s = await res.json();
       liveLatest = s;
       render(s, s.source);
       sliderNews.value = s.components.news; sliderSocial.value = s.components.social; sliderVol.value = s.components.volatility;
       newsV.textContent = s.components.news; socialV.textContent = s.components.social; volV.textContent = s.components.volatility;
-      const history = await fetch('/api/sentiment/history?limit=30').then(r => r.json());
+      const hres = await fetch('/api/sentiment/history?limit=30');
+      if (!hres.ok) throw new Error('sentiment history endpoint unavailable');
+      const history = await hres.json();
       drawSpark((history.snapshots || []).map(x => x.score).reverse());
     }
 
@@ -746,6 +788,9 @@
           liveLatest = msg.data;
           render(msg.data, msg.data.source);
         }
+      };
+      ws.onerror = () => {
+        sourceTag.textContent = 'Source: websocket unavailable';
       };
       ws.onclose = () => setTimeout(connectWS, 1000);
     }
@@ -848,13 +893,24 @@
     });
 
     (async function boot() {
-      await fetchAuthConfig();
-      await restoreAuth();
-      await loadLeaderboard();
-      await loadChallenges();
-      await loadPredictions();
-      await loadInitial();
-      connectWS();
+      try {
+        await fetchAuthConfig();
+        await restoreAuth();
+        if (!authToken) {
+          location.href = '/login';
+          return;
+        }
+        await loadLeaderboard();
+        await loadChallenges();
+        await loadPredictions();
+        await loadInitial();
+        connectWS();
+        updateAuthUi();
+      } catch (_err) {
+        setAuthState('API unreachable. Start backend with npm.cmd start', 'error');
+        sourceTag.textContent = 'Source: API offline';
+        updateAuthUi();
+      }
     })();
   </script>
 </body>

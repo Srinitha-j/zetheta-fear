@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fear & Greed Meter Login</title>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Sora:wght@600;700&display=swap");
+    :root {
+      --ink: #f7f2e9;
+      --muted: #c6bca8;
+      --bg: #0f1116;
+      --bg2: #1d2330;
+      --card: rgba(28, 32, 42, 0.82);
+      --line: rgba(255, 255, 255, 0.12);
+      --accent: #6ec7ff;
+      --err: #ffb3a9;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      font-family: "Space Grotesk", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1000px 500px at 12% -10%, #6c4025 0, transparent 60%),
+        radial-gradient(900px 500px at 90% 10%, #203b63 0, transparent 60%),
+        linear-gradient(140deg, var(--bg), var(--bg2));
+      padding: 16px;
+    }
+    .card {
+      width: min(460px, 100%);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--card);
+      backdrop-filter: blur(6px);
+      padding: 20px;
+    }
+    h1 { margin: 0; font: 700 1.7rem/1.2 "Sora", sans-serif; }
+    .sub { margin: 8px 0 16px; color: var(--muted); }
+    .row { display: grid; gap: 10px; }
+    label { display: grid; gap: 6px; color: var(--muted); }
+    input {
+      border: 1px solid var(--line);
+      background: #121826;
+      color: var(--ink);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-family: inherit;
+    }
+    .btn {
+      margin-top: 10px;
+      border: 1px solid var(--line);
+      background: #182132;
+      color: var(--ink);
+      border-radius: 10px;
+      padding: 10px 12px;
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 600;
+    }
+    .hint { margin-top: 12px; color: var(--muted); font-size: 0.9rem; }
+    .state { margin-top: 10px; min-height: 1em; color: var(--err); }
+  </style>
+</head>
+<body>
+  <section class="card">
+    <h1>Fear & Greed Meter</h1>
+    <p class="sub">Login to continue to your task dashboard</p>
+    <div class="row">
+      <label>Username<input id="username" type="text" placeholder="demo_admin" /></label>
+      <label>Password<input id="password" type="password" placeholder="Newpass#123" /></label>
+      <button id="loginBtn" class="btn">Login</button>
+      <p id="state" class="state"></p>
+    </div>
+    <p class="hint">Demo login: <strong>demo_admin</strong> / <strong>Newpass#123</strong></p>
+  </section>
+
+  <script>
+    const userEl = document.getElementById('username');
+    const passEl = document.getElementById('password');
+    const stateEl = document.getElementById('state');
+    const btn = document.getElementById('loginBtn');
+
+    function setState(text) {
+      stateEl.textContent = text || '';
+    }
+
+    function setCookie(name, value) {
+      document.cookie = `${name}=${encodeURIComponent(value)}; path=/; SameSite=Lax`;
+    }
+
+    function setAuth(token, refreshToken) {
+      try {
+        if (token) localStorage.setItem('fg_token', token);
+        if (refreshToken) localStorage.setItem('fg_refresh_token', refreshToken);
+      } catch (_err) {
+        // Browser storage can be blocked in strict/privacy modes.
+      }
+      if (token) setCookie('fg_token', token);
+      if (refreshToken) setCookie('fg_refresh_token', refreshToken);
+    }
+
+    async function login() {
+      const username = userEl.value.trim();
+      const password = passEl.value;
+      if (!username || !password) {
+        setState('Username and password are required');
+        return;
+      }
+      setState('');
+      btn.disabled = true;
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.token) {
+          setState(data.error || 'Login failed');
+          return;
+        }
+        setAuth(data.token, data.refreshToken || null);
+        location.href = '/app';
+      } catch (_err) {
+        setState('API unreachable. Start backend with npm.cmd start');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    btn.addEventListener('click', login);
+    passEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') login();
+    });
+  </script>
+</body>
+</html>
